@@ -45,73 +45,76 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <header className="sticky top-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-4">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               RSS Flow
             </h1>
-            <div className="flex gap-2">
-              <button
-                onClick={handleRefresh}
-                disabled={isPending}
-                className="p-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw size={18} className={isPending ? 'animate-spin' : ''} />
-              </button>
-              <a
-                href="/admin"
-                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                title="Admin"
-              >
-                <Settings size={18} />
-              </a>
-            </div>
-          </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-2">
-                Time Range
-              </label>
-              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                {(['24h', '3d', '7d'] as TimeRange[]).map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => handleTimeRangeChange(range)}
-                    className={`
-                      px-4 py-2 text-sm font-medium transition-colors
-                      ${timeRange === range
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }
-                    `}
-                  >
-                    {range === '24h' ? '24 Hours' : range === '3d' ? '3 Days' : '7 Days'}
-                  </button>
-                ))}
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-2">
+                    Time Range
+                  </label>
+                  <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                    {(['24h', '3d', '7d'] as TimeRange[]).map((range) => (
+                      <button
+                        key={range}
+                        onClick={() => handleTimeRangeChange(range)}
+                        className={`
+                          px-4 py-2 text-sm font-medium transition-colors
+                          ${timeRange === range
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }
+                        `}
+                      >
+                        {range === '24h' ? '24 Hours' : range === '3d' ? '3 Days' : '7 Days'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-2">
+                    Content Preview
+                  </label>
+                  <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                    {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
+                      <button
+                        key={lines}
+                        onClick={() => handleContentLinesChange(lines)}
+                        className={`
+                          px-4 py-2 text-sm font-medium transition-colors
+                          ${contentLines === lines
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }
+                        `}
+                      >
+                        {lines === 0 ? 'None' : lines}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-2">
-                Content Preview
-              </label>
-              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
-                  <button
-                    key={lines}
-                    onClick={() => handleContentLinesChange(lines)}
-                    className={`
-                      px-4 py-2 text-sm font-medium transition-colors
-                      ${contentLines === lines
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }
-                    `}
-                  >
-                    {lines === 0 ? 'None' : lines}
-                  </button>
-                ))}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRefresh}
+                  disabled={isPending}
+                  className="p-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw size={18} className={isPending ? 'animate-spin' : ''} />
+                </button>
+                <a
+                  href="/admin"
+                  className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  title="Admin"
+                >
+                  <Settings size={18} />
+                </a>
               </div>
             </div>
           </div>
