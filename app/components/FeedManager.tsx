@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react';
 import { Feed } from '@/types';
 import { addFeed, deleteFeed } from '@/app/actions/feeds';
-import { Home, Plus, Trash2 } from 'lucide-react';
+import { Home, Plus, Trash2, Sun, Moon } from 'lucide-react';
+import { useTheme } from './ThemeProvider';
 
 interface FeedManagerProps {
   initialFeeds: Feed[];
@@ -35,6 +36,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [color, setColor] = useState(DEFAULT_COLORS[0]);
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,13 +85,22 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Feed Management
           </h1>
-          <a
-            href="/"
-            className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            title="Back to Feed"
-          >
-            <Home size={18} />
-          </a>
+          <div className="flex gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <a
+              href="/"
+              className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              title="Back to Feed"
+            >
+              <Home size={18} />
+            </a>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">

@@ -43,7 +43,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span
-              className="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0"
+              className="px-3 py-1 rounded-full text-xs font-bold flex-shrink-0"
               style={{
                 backgroundColor: `${article.categoryColor}20`,
                 color: article.categoryColor,
@@ -55,15 +55,15 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
               {formatRelativeTime(article.pubDate)}
             </span>
             <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
-            <span className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
+            <span className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0 font-bold">
               {article.feedName}
             </span>
             <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
             <h2 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-              {article.title}
+              {article.title || `"${article.content}"`}
             </h2>
           </div>
-          {contentLines > 0 && article.content && (
+          {contentLines > 0 && article.content && article.title && (
             <p
               className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mt-1"
               style={{
