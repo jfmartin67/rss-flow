@@ -50,16 +50,8 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               RSS Flow
             </h1>
 
-            <div className="flex flex-col items-center gap-2 flex-1">
-              <div className="flex gap-8">
-                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">
-                  Time Range
-                </div>
-                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">
-                  Content Preview
-                </div>
-              </div>
-              <div className="flex gap-4">
+            <div className="flex items-center gap-4 flex-1 justify-center">
+              <div className="flex flex-col items-center gap-1">
                 <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                   {(['24h', '3d', '7d'] as TimeRange[]).map((range) => (
                     <button
@@ -77,7 +69,12 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                     </button>
                   ))}
                 </div>
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">
+                  Time Range
+                </div>
+              </div>
 
+              <div className="flex flex-col items-center gap-1">
                 <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                   {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
                     <button
@@ -94,6 +91,9 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                       {lines === 0 ? 'None' : lines}
                     </button>
                   ))}
+                </div>
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">
+                  Content Preview
                 </div>
               </div>
             </div>

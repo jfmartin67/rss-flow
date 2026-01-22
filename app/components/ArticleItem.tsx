@@ -43,7 +43,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span
-              className="px-2 py-0.5 rounded text-xs font-medium flex-shrink-0"
+              className="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0"
               style={{
                 backgroundColor: `${article.categoryColor}20`,
                 color: article.categoryColor,
