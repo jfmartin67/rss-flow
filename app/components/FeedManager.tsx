@@ -11,6 +11,7 @@ interface FeedManagerProps {
 }
 
 const DEFAULT_COLORS = [
+  '#4b5563', // dark grey
   '#ef4444', // red
   '#f97316', // orange
   '#f59e0b', // amber
