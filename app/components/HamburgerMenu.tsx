@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 interface HamburgerMenuProps {
@@ -11,6 +11,28 @@ interface HamburgerMenuProps {
 
 export default function HamburgerMenu({ isOpen, onClose, children }: HamburgerMenuProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Handle mount/unmount with animation
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      // Trigger animation after mount
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      // Wait for animation to complete before unmounting
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300); // Match transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Handle escape key
   useEffect(() => {
@@ -70,13 +92,16 @@ export default function HamburgerMenu({ isOpen, onClose, children }: HamburgerMe
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isVisible) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 transition-opacity duration-300 z-50"
+        className={`
+          fixed inset-0 bg-black/50 transition-opacity duration-300 z-50
+          ${isAnimating ? 'opacity-100' : 'opacity-0'}
+        `}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -90,7 +115,7 @@ export default function HamburgerMenu({ isOpen, onClose, children }: HamburgerMe
         className={`
           fixed right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-2xl z-50
           transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${isAnimating ? 'translate-x-0' : 'translate-x-full'}
         `}
       >
         {/* Close button */}
