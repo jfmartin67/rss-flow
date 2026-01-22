@@ -39,7 +39,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2">
             {/* Fixed width metadata section */}
-            <div className="flex items-center gap-2 w-96 flex-shrink-0">
+            <div className="flex items-center gap-2 w-64 flex-shrink-0">
               <span
                 className="px-3 py-1 rounded-full text-xs font-bold flex-shrink-0"
                 style={{
