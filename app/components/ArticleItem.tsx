@@ -29,7 +29,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
     <article
       onClick={handleClick}
       className={`
-        border-b border-gray-200 dark:border-gray-700 py-2 px-4 cursor-pointer
+        py-2 px-4 cursor-pointer
         hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
         ${isRead ? 'opacity-50' : ''}
       `}
@@ -54,7 +54,11 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
             <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
               {formatRelativeTime(article.pubDate)}
             </span>
-            <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">•</span>
+            <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
+            <span className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0">
+              {article.feedName}
+            </span>
+            <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
             <h2 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
               {article.title}
             </h2>
