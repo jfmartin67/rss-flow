@@ -4,14 +4,18 @@ A minimal, web-based RSS reader with "river of news" style interface built with 
 
 ## Features
 
-- **River of News Interface**: Chronological stream of articles from all feeds
+- **River of News Interface**: Chronological stream of articles from all feeds with compact, information-dense layout
 - **Time Range Filtering**: View articles from 24h, 3d, or 7d
-- **Adjustable Content Preview**: Toggle between 1, 2, or 3 lines of content
-- **Category Organization**: Color-coded category pills for easy scanning
+- **Adjustable Content Preview**: Toggle between none, 1, 2, or 3 lines of content
+- **Category Organization**: Color-coded category pills for easy scanning (17 colors including dark grey)
 - **Read State Tracking**: Mark articles as read automatically when clicked
+- **Responsive Design**: Full-width layout on tablet/desktop, hamburger menu on mobile
+- **Mobile-First Navigation**: Slide-out hamburger menu for touch-friendly mobile experience
 - **PWA Support**: Install as a standalone app on mobile and desktop
-- **Dark Mode**: Automatic dark mode support based on system preferences
-- **Feed Management**: Simple admin interface for adding/removing feeds
+- **Dark Mode**: Manual theme toggle with system preference support
+- **Feed Management**: Admin interface for adding/editing/removing feeds
+- **Editable Feed Metadata**: Change feed names, categories, and tag colors
+- **Consistent Alignment**: Fixed-width source column keeps article titles aligned
 
 ## Tech Stack
 
@@ -91,15 +95,21 @@ npm run dev
 
 - Articles are displayed in chronological order (newest first)
 - Click any article to open it in a new tab and mark it as read
-- Use the time range selector to filter articles
-- Adjust content preview lines for your preferred density
+- Use the time range selector to filter articles (24h, 3d, 7d)
+- Adjust content preview lines for your preferred density (None, 1, 2, or 3 lines)
+- On mobile: Use hamburger menu for all controls
+- On desktop: All controls are inline in the header
+- Compact layout maximizes visible articles
+- Fixed-width source column ensures consistent title alignment
 
 ### Admin Panel
 
 - Access at `/admin`
-- Add new RSS feeds
+- Add new RSS feeds with custom categories and colors
+- Edit feed names, categories, and tag colors
 - Delete existing feeds
-- View all configured feeds
+- View all configured feeds with color-coded tags
+- Choose from 17 predefined colors including dark grey
 
 ## Deployment
 
@@ -176,7 +186,9 @@ rss-flow/
 │   ├── components/
 │   │   ├── ArticleItem.tsx   # Single article component
 │   │   ├── FeedManager.tsx   # Feed management UI
-│   │   └── RiverView.tsx     # Main feed display
+│   │   ├── HamburgerMenu.tsx # Mobile navigation menu
+│   │   ├── RiverView.tsx     # Main feed display
+│   │   └── ThemeProvider.tsx # Dark mode context
 │   ├── globals.css           # Global styles
 │   ├── layout.tsx            # Root layout
 │   └── page.tsx              # Home page

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
 import { fetchAllArticles } from '@/app/actions/articles';
@@ -50,9 +51,18 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
       <header className="sticky top-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
         <div className="w-full px-4 py-4">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex-shrink-0 font-[family-name:var(--font-red-hat-display)]">
-              RSS Flow
-            </h1>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <Image
+                src="/avatar.png"
+                alt="Avatar"
+                width={40}
+                height={40}
+                className="rounded-full"
+              />
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 font-[family-name:var(--font-red-hat-display)]">
+                RSS Flow
+              </h1>
+            </div>
 
             <div className="hidden md:flex items-center gap-4 flex-1 justify-center">
               <div className="flex flex-col items-center gap-1">
