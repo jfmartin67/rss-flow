@@ -1,8 +1,11 @@
 import { kv } from '@vercel/kv';
 import { Feed } from '@/types';
 
-const FEEDS_KEY = 'feeds:list';
-const READ_ARTICLES_KEY = 'articles:read';
+// Namespace prefix to avoid key collisions when sharing KV instance
+const KV_PREFIX = process.env.KV_PREFIX || 'rss-flow';
+
+const FEEDS_KEY = `${KV_PREFIX}:feeds:list`;
+const READ_ARTICLES_KEY = `${KV_PREFIX}:articles:read`;
 
 export async function getFeeds(): Promise<Feed[]> {
   try {

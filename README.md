@@ -44,7 +44,7 @@ npm install
 
 3. Set up Vercel KV:
    - Go to [Vercel Dashboard](https://vercel.com/dashboard)
-   - Create a new KV database
+   - Create a new KV database OR use an existing one (see note below)
    - Copy the environment variables
 
 4. Create `.env.local` file:
@@ -58,7 +58,15 @@ KV_URL=your_kv_url_here
 KV_REST_API_URL=your_kv_rest_api_url_here
 KV_REST_API_TOKEN=your_kv_rest_api_token_here
 KV_REST_API_READ_ONLY_TOKEN=your_kv_rest_api_read_only_token_here
+
+# Optional: Set a custom prefix if sharing KV with other projects
+KV_PREFIX=rss-flow
 ```
+
+**Important Note - Sharing KV Instance:**
+If you're using a single Vercel KV instance shared with other projects, the `KV_PREFIX` environment variable ensures no key collisions occur. All Redis keys are automatically namespaced with this prefix (default: "rss-flow"). For example:
+- Keys: `rss-flow:feeds:list`, `rss-flow:articles:read`
+- If sharing, use different prefixes for each project (e.g., "rss-flow", "project2", etc.)
 
 6. Generate app icons (see `public/ICONS.md` for instructions)
 
@@ -106,6 +114,7 @@ npm run dev
 
 3. Configure environment variables:
    - Add all `KV_*` variables from your `.env.local`
+   - Add `KV_PREFIX=rss-flow` (or your custom prefix if sharing KV with other projects)
 
 4. Deploy:
    - Vercel will automatically build and deploy
@@ -120,10 +129,14 @@ npm run dev
 
 ### Vercel KV Schema
 
+All keys are automatically namespaced with the `KV_PREFIX` (default: "rss-flow"):
+
 ```
-feeds:list          → JSON string containing array of feeds
-articles:read       → Redis Set containing article GUIDs marked as read
+rss-flow:feeds:list      → JSON string containing array of feeds
+rss-flow:articles:read   → Redis Set containing article GUIDs marked as read
 ```
+
+This namespacing allows multiple projects to share the same KV instance without conflicts.
 
 ### Feed Object
 ```typescript
