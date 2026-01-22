@@ -36,7 +36,7 @@ export async function fetchFeedArticles(feed: Feed): Promise<Article[]> {
 
     return parsedFeed.items.map(item => ({
       guid: item.guid || item.link || item.title || `${feed.id}-${Date.now()}`,
-      title: item.title || 'Untitled',
+      title: item.title || '',
       link: item.link || '',
       pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
       content: item.contentSnippet || item.content || item.summary || '',
