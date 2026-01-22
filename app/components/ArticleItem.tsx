@@ -28,7 +28,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
   return (
     <article
       onClick={handleClick}
-      className="py-2 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      className="py-2 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-200 dark:border-gray-800"
     >
       <div className="flex items-start gap-3">
         <div
