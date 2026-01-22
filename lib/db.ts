@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import Redis from 'ioredis';
 import { Feed } from '@/types';
 
 // Namespace prefix to avoid key collisions when sharing KV instance
@@ -7,9 +7,22 @@ const KV_PREFIX = process.env.KV_PREFIX || 'rss-flow';
 const FEEDS_KEY = `${KV_PREFIX}:feeds:list`;
 const READ_ARTICLES_KEY = `${KV_PREFIX}:articles:read`;
 
+// Create Redis client using KV_URL (direct Redis connection)
+// Connection string format: redis://user:password@host:port
+const redis = new Redis(process.env.KV_URL || process.env.REDIS_URL || '', {
+  maxRetriesPerRequest: 3,
+  enableReadyCheck: true,
+  lazyConnect: true,
+});
+
+// Ensure connection is established
+redis.connect().catch(err => {
+  console.error('Redis connection error:', err);
+});
+
 export async function getFeeds(): Promise<Feed[]> {
   try {
-    const feedsJson = await kv.get<string>(FEEDS_KEY);
+    const feedsJson = await redis.get(FEEDS_KEY);
     if (!feedsJson) {
       return [];
     }
@@ -22,7 +35,7 @@ export async function getFeeds(): Promise<Feed[]> {
 
 export async function saveFeeds(feeds: Feed[]): Promise<void> {
   try {
-    await kv.set(FEEDS_KEY, JSON.stringify(feeds));
+    await redis.set(FEEDS_KEY, JSON.stringify(feeds));
   } catch (error) {
     console.error('Error saving feeds:', error);
     throw new Error('Failed to save feeds');
@@ -43,7 +56,7 @@ export async function deleteFeed(id: string): Promise<void> {
 
 export async function markArticleAsRead(guid: string): Promise<void> {
   try {
-    await kv.sadd(READ_ARTICLES_KEY, guid);
+    await redis.sadd(READ_ARTICLES_KEY, guid);
   } catch (error) {
     console.error('Error marking article as read:', error);
     throw new Error('Failed to mark article as read');
@@ -52,7 +65,7 @@ export async function markArticleAsRead(guid: string): Promise<void> {
 
 export async function getReadArticles(): Promise<Set<string>> {
   try {
-    const readGuids = await kv.smembers(READ_ARTICLES_KEY);
+    const readGuids = await redis.smembers(READ_ARTICLES_KEY);
     return new Set(readGuids || []);
   } catch (error) {
     console.error('Error getting read articles:', error);
