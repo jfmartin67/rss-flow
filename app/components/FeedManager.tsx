@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { Feed } from '@/types';
-import { addFeed, deleteFeed } from '@/app/actions/feeds';
-import { Home, Plus, Trash2, Sun, Moon } from 'lucide-react';
+import { addFeed, updateFeed, deleteFeed } from '@/app/actions/feeds';
+import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
 interface FeedManagerProps {
@@ -37,6 +37,9 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
   const { theme, toggleTheme } = useTheme();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +61,45 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
         window.location.reload();
       } else {
         setError(result.error || 'Failed to add feed');
+      }
+    });
+  };
+
+  const handleEdit = (feed: Feed) => {
+    setEditingId(feed.id);
+    setEditName(feed.name);
+    setEditCategory(feed.category);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditCategory('');
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editName.trim() || !editCategory.trim()) {
+      setError('Name and category are required');
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updateFeed(id, {
+        name: editName.trim(),
+        category: editCategory.trim(),
+      });
+
+      if (result.success) {
+        setFeeds(feeds.map(feed =>
+          feed.id === id
+            ? { ...feed, name: editName.trim(), category: editCategory.trim() }
+            : feed
+        ));
+        setEditingId(null);
+        setEditName('');
+        setEditCategory('');
+      } else {
+        setError(result.error || 'Failed to update feed');
       }
     });
   };
@@ -199,31 +241,87 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                     style={{ backgroundColor: feed.color }}
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {feed.name}
-                    </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                      {feed.url}
-                    </p>
+                    {editingId === feed.id ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="Feed name"
+                        />
+                        <input
+                          type="text"
+                          value={editCategory}
+                          onChange={(e) => setEditCategory(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="Category"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {feed.name}
+                        </h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                          {feed.url}
+                        </p>
+                      </>
+                    )}
                   </div>
-                  <span
-                    className="px-2 py-1 rounded text-xs font-medium flex-shrink-0"
-                    style={{
-                      backgroundColor: `${feed.color}20`,
-                      color: feed.color,
-                    }}
-                  >
-                    {feed.category}
-                  </span>
+                  {editingId !== feed.id && (
+                    <span
+                      className="px-2 py-1 rounded text-xs font-medium flex-shrink-0"
+                      style={{
+                        backgroundColor: `${feed.color}20`,
+                        color: feed.color,
+                      }}
+                    >
+                      {feed.category}
+                    </span>
+                  )}
                 </div>
-                <button
-                  onClick={() => handleDelete(feed.id)}
-                  disabled={isPending}
-                  className="ml-4 p-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="ml-4 flex gap-2">
+                  {editingId === feed.id ? (
+                    <>
+                      <button
+                        onClick={() => handleSaveEdit(feed.id)}
+                        disabled={isPending}
+                        className="p-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 transition-colors"
+                        title="Save"
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={isPending}
+                        className="p-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                        title="Cancel"
+                      >
+                        <X size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleEdit(feed)}
+                        disabled={isPending}
+                        className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(feed.id)}
+                        disabled={isPending}
+                        className="p-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -48,6 +48,16 @@ export async function addFeed(feed: Feed): Promise<void> {
   await saveFeeds(feeds);
 }
 
+export async function updateFeed(id: string, updates: Partial<Feed>): Promise<void> {
+  const feeds = await getFeeds();
+  const feedIndex = feeds.findIndex(feed => feed.id === id);
+  if (feedIndex === -1) {
+    throw new Error('Feed not found');
+  }
+  feeds[feedIndex] = { ...feeds[feedIndex], ...updates };
+  await saveFeeds(feeds);
+}
+
 export async function deleteFeed(id: string): Promise<void> {
   const feeds = await getFeeds();
   const filteredFeeds = feeds.filter(feed => feed.id !== id);

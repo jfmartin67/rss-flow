@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { Feed } from '@/types';
-import { getFeeds, addFeed as dbAddFeed, deleteFeed as dbDeleteFeed } from '@/lib/db';
+import { getFeeds, addFeed as dbAddFeed, updateFeed as dbUpdateFeed, deleteFeed as dbDeleteFeed } from '@/lib/db';
 import { fetchFeedMetadata } from '@/lib/rss';
 
 export async function addFeed(url: string, category: string, color: string): Promise<{ success: boolean; error?: string }> {
@@ -28,6 +28,22 @@ export async function addFeed(url: string, category: string, color: string): Pro
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to add feed',
+    };
+  }
+}
+
+export async function updateFeed(id: string, updates: { name?: string; category?: string; color?: string }): Promise<{ success: boolean; error?: string }> {
+  try {
+    await dbUpdateFeed(id, updates);
+    revalidatePath('/');
+    revalidatePath('/admin');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating feed:', error);
+    return {
+      success: false,
+      error: 'Failed to update feed',
     };
   }
 }
