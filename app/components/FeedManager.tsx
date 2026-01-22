@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Feed } from '@/types';
 import { addFeed, deleteFeed } from '@/app/actions/feeds';
+import { Home, Plus, Trash2 } from 'lucide-react';
 
 interface FeedManagerProps {
   initialFeeds: Feed[];
@@ -84,9 +85,10 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
           </h1>
           <a
             href="/"
-            className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            title="Back to Feed"
           >
-            Back to Feed
+            <Home size={18} />
           </a>
         </div>
 
@@ -155,9 +157,10 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              className="w-full p-3 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors flex items-center justify-center"
+              title={isPending ? 'Adding Feed...' : 'Add Feed'}
             >
-              {isPending ? 'Adding Feed...' : 'Add Feed'}
+              <Plus size={20} />
             </button>
           </div>
         </form>
@@ -205,9 +208,10 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                 <button
                   onClick={() => handleDelete(feed.id)}
                   disabled={isPending}
-                  className="ml-4 px-3 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
+                  className="ml-4 p-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
+                  title="Delete"
                 >
-                  Delete
+                  <Trash2 size={16} />
                 </button>
               </div>
             ))}

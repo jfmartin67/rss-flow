@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
 import { fetchAllArticles } from '@/app/actions/articles';
+import { RefreshCw, Settings } from 'lucide-react';
 
 interface RiverViewProps {
   initialArticles: Article[];
@@ -52,15 +53,17 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               <button
                 onClick={handleRefresh}
                 disabled={isPending}
-                className="px-3 py-1.5 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                className="p-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                title="Refresh"
               >
-                {isPending ? 'Refreshing...' : 'Refresh'}
+                <RefreshCw size={18} className={isPending ? 'animate-spin' : ''} />
               </button>
               <a
                 href="/admin"
-                className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title="Admin"
               >
-                Admin
+                <Settings size={18} />
               </a>
             </div>
           </div>
