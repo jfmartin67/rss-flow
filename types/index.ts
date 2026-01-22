@@ -19,4 +19,4 @@ export interface Article {
 
 export type TimeRange = '24h' | '3d' | '7d';
 
-export type ContentLines = 1 | 2 | 3;
+export type ContentLines = 0 | 1 | 2 | 3;

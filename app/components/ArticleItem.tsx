@@ -34,29 +34,44 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
         ${isRead ? 'opacity-50' : ''}
       `}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <div
-          className="w-2 h-2 rounded-full flex-shrink-0"
+          className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
           style={{ backgroundColor: article.categoryColor }}
           title={article.category}
         />
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span
-            className="px-2 py-0.5 rounded text-xs font-medium flex-shrink-0"
-            style={{
-              backgroundColor: `${article.categoryColor}20`,
-              color: article.categoryColor,
-            }}
-          >
-            {article.category}
-          </span>
-          <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
-            {formatRelativeTime(article.pubDate)}
-          </span>
-          <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">•</span>
-          <h2 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-            {article.title}
-          </h2>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span
+              className="px-2 py-0.5 rounded text-xs font-medium flex-shrink-0"
+              style={{
+                backgroundColor: `${article.categoryColor}20`,
+                color: article.categoryColor,
+              }}
+            >
+              {article.category}
+            </span>
+            <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
+              {formatRelativeTime(article.pubDate)}
+            </span>
+            <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">•</span>
+            <h2 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+              {article.title}
+            </h2>
+          </div>
+          {contentLines > 0 && article.content && (
+            <p
+              className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mt-1"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: contentLines,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {truncateContent(article.content, contentLines as 1 | 2 | 3)}
+            </p>
+          )}
         </div>
       </div>
     </article>

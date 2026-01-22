@@ -14,7 +14,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [articles, setArticles] = useState(initialArticles);
   const [readGuids, setReadGuids] = useState<Set<string>>(new Set(initialReadGuids));
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
-  const [contentLines, setContentLines] = useState<ContentLines>(2);
+  const [contentLines, setContentLines] = useState<ContentLines>(0);
   const [isPending, startTransition] = useTransition();
 
   const handleTimeRangeChange = async (range: TimeRange) => {
@@ -91,10 +91,10 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
 
             <div>
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-2">
-                Content Lines
+                Content Preview
               </label>
               <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                {([1, 2, 3] as ContentLines[]).map((lines) => (
+                {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
                   <button
                     key={lines}
                     onClick={() => handleContentLinesChange(lines)}
@@ -106,7 +106,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                       }
                     `}
                   >
-                    {lines}
+                    {lines === 0 ? 'None' : lines}
                   </button>
                 ))}
               </div>
