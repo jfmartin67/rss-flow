@@ -4,8 +4,9 @@ import { useState, useTransition } from 'react';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
 import { fetchAllArticles } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import HamburgerMenu from './HamburgerMenu';
 
 interface RiverViewProps {
   initialArticles: Article[];
@@ -18,6 +19,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [contentLines, setContentLines] = useState<ContentLines>(0);
   const [isPending, startTransition] = useTransition();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const handleTimeRangeChange = async (range: TimeRange) => {
@@ -52,7 +54,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               RSS Flow
             </h1>
 
-            <div className="flex items-center gap-4 flex-1 justify-center">
+            <div className="hidden md:flex items-center gap-4 flex-1 justify-center">
               <div className="flex flex-col items-center gap-1">
                 <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                   {(['24h', '3d', '7d'] as TimeRange[]).map((range) => (
@@ -100,7 +102,18 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               </div>
             </div>
 
-            <div className="flex gap-2 flex-shrink-0">
+            {/* Hamburger button - mobile only */}
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              className="md:hidden p-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+              title="Menu"
+              aria-label="Open menu"
+              aria-expanded={isMenuOpen}
+            >
+              <Menu size={18} />
+            </button>
+
+            <div className="hidden md:flex gap-2 flex-shrink-0">
               <button
                 onClick={handleRefresh}
                 disabled={isPending}
@@ -127,6 +140,99 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
           </div>
         </div>
       </header>
+
+      {/* Hamburger Menu */}
+      <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
+        <div className="space-y-6">
+          {/* Time Range Section */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Time Range
+            </h3>
+            <div className="flex flex-col gap-2">
+              {(['24h', '3d', '7d'] as TimeRange[]).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => {
+                    handleTimeRangeChange(range);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`
+                    px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                    ${timeRange === range
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }
+                  `}
+                >
+                  {range === '24h' ? '24 Hours' : range === '3d' ? '3 Days' : '7 Days'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Preview Section */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Content Preview
+            </h3>
+            <div className="flex flex-col gap-2">
+              {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
+                <button
+                  key={lines}
+                  onClick={() => {
+                    handleContentLinesChange(lines);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`
+                    px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                    ${contentLines === lines
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }
+                  `}
+                >
+                  {lines === 0 ? 'None' : `${lines} Line${lines > 1 ? 's' : ''}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions Section */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Actions
+            </h3>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  handleRefresh();
+                  setIsMenuOpen(false);
+                }}
+                disabled={isPending}
+                className="px-4 py-3 text-sm font-medium rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <RefreshCw size={18} className={isPending ? 'animate-spin' : ''} />
+                Refresh
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+              </button>
+              <a
+                href="/admin"
+                className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Settings size={18} />
+                Settings
+              </a>
+            </div>
+          </div>
+        </div>
+      </HamburgerMenu>
 
       <main className="max-w-4xl mx-auto">
         {articles.length === 0 ? (
