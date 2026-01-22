@@ -40,6 +40,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [editColor, setEditColor] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,12 +70,14 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
     setEditingId(feed.id);
     setEditName(feed.name);
     setEditCategory(feed.category);
+    setEditColor(feed.color);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditName('');
     setEditCategory('');
+    setEditColor('');
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -87,17 +90,19 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
       const result = await updateFeed(id, {
         name: editName.trim(),
         category: editCategory.trim(),
+        color: editColor,
       });
 
       if (result.success) {
         setFeeds(feeds.map(feed =>
           feed.id === id
-            ? { ...feed, name: editName.trim(), category: editCategory.trim() }
+            ? { ...feed, name: editName.trim(), category: editCategory.trim(), color: editColor }
             : feed
         ));
         setEditingId(null);
         setEditName('');
         setEditCategory('');
+        setEditColor('');
       } else {
         setError(result.error || 'Failed to update feed');
       }
@@ -257,6 +262,25 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                           className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
                           placeholder="Category"
                         />
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Tag Color
+                          </label>
+                          <div className="flex gap-1 flex-wrap">
+                            {DEFAULT_COLORS.map((c) => (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => setEditColor(c)}
+                                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                                  editColor === c ? 'border-gray-900 dark:border-gray-100 scale-110' : 'border-transparent'
+                                }`}
+                                style={{ backgroundColor: c }}
+                                title={c}
+                              />
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <>
