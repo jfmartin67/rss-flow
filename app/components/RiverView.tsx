@@ -48,7 +48,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
       <header className="sticky top-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex-shrink-0">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex-shrink-0">
               RSS Flow
             </h1>
 
