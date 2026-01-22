@@ -28,15 +28,11 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
   return (
     <article
       onClick={handleClick}
-      className={`
-        py-2 px-4 cursor-pointer
-        hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
-        ${isRead ? 'opacity-50' : ''}
-      `}
+      className="py-2 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
     >
       <div className="flex items-start gap-3">
         <div
-          className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
+          className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 ${isRead ? 'invisible' : ''}`}
           style={{ backgroundColor: article.categoryColor }}
           title={article.category}
         />
