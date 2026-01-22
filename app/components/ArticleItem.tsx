@@ -60,10 +60,10 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
             </span>
             <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
             <h2 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-              {article.title || `"${article.content}"`}
+              {article.title?.trim() || (article.content ? `"${article.content}"` : 'Untitled')}
             </h2>
           </div>
-          {contentLines > 0 && article.content && article.title && (
+          {contentLines > 0 && article.content && article.title?.trim() && (
             <p
               className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mt-1"
               style={{
