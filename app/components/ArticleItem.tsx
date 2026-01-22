@@ -41,17 +41,9 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
           title={article.category}
         />
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 mb-1">
-            <h2 className="font-semibold text-base text-gray-900 dark:text-gray-100">
-              {article.title}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-2">
-            <span className="font-medium">{article.feedName}</span>
-            <span>•</span>
-            <span>{formatRelativeTime(article.pubDate)}</span>
+          <div className="flex items-center gap-2 mb-1">
             <span
-              className="px-2 py-0.5 rounded text-xs font-medium"
+              className="px-2 py-0.5 rounded text-xs font-medium flex-shrink-0"
               style={{
                 backgroundColor: `${article.categoryColor}20`,
                 color: article.categoryColor,
@@ -59,6 +51,12 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
             >
               {article.category}
             </span>
+            <h2 className="font-semibold text-base text-gray-900 dark:text-gray-100">
+              {article.title}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-2">
+            <span>{formatRelativeTime(article.pubDate)}</span>
           </div>
           {article.content && (
             <p
