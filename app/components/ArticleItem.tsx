@@ -37,25 +37,28 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
           title={article.category}
         />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span
-              className="px-3 py-1 rounded-full text-xs font-bold flex-shrink-0"
-              style={{
-                backgroundColor: `${article.categoryColor}20`,
-                color: article.categoryColor,
-              }}
-            >
-              {article.category}
-            </span>
-            <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
-              {formatRelativeTime(article.pubDate)}
-            </span>
-            <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
-            <span className="text-xs text-gray-500 dark:text-gray-500 flex-shrink-0 font-bold">
-              {article.feedName}
-            </span>
-            <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
-            <h2 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+          <div className="flex items-start gap-2">
+            {/* Fixed width metadata section */}
+            <div className="flex items-center gap-2 w-96 flex-shrink-0">
+              <span
+                className="px-3 py-1 rounded-full text-xs font-bold flex-shrink-0"
+                style={{
+                  backgroundColor: `${article.categoryColor}20`,
+                  color: article.categoryColor,
+                }}
+              >
+                {article.category}
+              </span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
+                {formatRelativeTime(article.pubDate)}
+              </span>
+              <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
+              <span className="text-xs text-gray-500 dark:text-gray-500 truncate font-bold">
+                {article.feedName}
+              </span>
+            </div>
+            {/* Title section - always starts at same position */}
+            <h2 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate flex-1">
               {article.title?.trim() || (article.content?.trim() ? `"${article.content.trim()}"` : 'Untitled')}
             </h2>
           </div>
