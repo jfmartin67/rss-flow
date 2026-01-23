@@ -100,50 +100,45 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         return;
       }
 
-      // Create a container for all highlight rectangles
-      const container = document.createElement('div');
-      container.setAttribute('data-selection-highlight', 'true');
-      container.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 99999;
-      `;
+      // Create individual highlight divs for each rectangle (not in a container)
+      // This ensures they appear above the modal
+      const highlights: HTMLElement[] = [];
 
-      // Create a highlight rect for each line
       for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
         console.log('Rect', i, ':', rect.left, rect.top, rect.width, rect.height);
 
         const highlightRect = document.createElement('div');
+        highlightRect.setAttribute('data-selection-highlight', 'true');
         highlightRect.style.cssText = `
           position: fixed;
           left: ${rect.left}px;
           top: ${rect.top}px;
           width: ${rect.width}px;
           height: ${rect.height}px;
-          background-color: rgba(59, 130, 246, 0.3);
+          background-color: rgba(59, 130, 246, 0.35);
           pointer-events: none;
-          border: 2px solid #3b82f6;
+          z-index: 99999;
+          mix-blend-mode: multiply;
         `;
-        container.appendChild(highlightRect);
+
+        document.body.appendChild(highlightRect);
+        highlights.push(highlightRect);
       }
 
-      document.body.appendChild(container);
-      highlightSpanRef.current = container as any;
-      console.log('Highlight created and added to body');
+      // Store reference to first highlight (we'll use querySelectorAll to remove all)
+      if (highlights.length > 0) {
+        highlightSpanRef.current = highlights[0] as any;
+        console.log('Highlight created and added to body:', highlights.length, 'elements');
+      }
     };
 
     // Helper to remove visual highlight
     const removeHighlight = () => {
-      const highlight = document.querySelector('[data-selection-highlight]');
-      if (highlight) {
-        highlight.remove();
-        highlightSpanRef.current = null;
-      }
+      const highlights = document.querySelectorAll('[data-selection-highlight]');
+      highlights.forEach(h => h.remove());
+      highlightSpanRef.current = null;
+      console.log('Removed', highlights.length, 'highlight elements');
     };
 
     // Prevent right-click mousedown from clearing selection
@@ -327,11 +322,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     try {
       await navigator.clipboard.writeText(markdown);
 
-      // Remove highlight before clearing
-      const highlight = document.querySelector('[data-selection-highlight]');
-      if (highlight) {
-        highlight.remove();
-      }
+      // Remove all highlights before clearing
+      const highlights = document.querySelectorAll('[data-selection-highlight]');
+      highlights.forEach(h => h.remove());
 
       setShowContextMenu(false);
       setSelectedText('');
@@ -358,11 +351,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     window.open(url, '_blank', 'noopener,noreferrer');
 
-    // Remove highlight before clearing
-    const highlight = document.querySelector('[data-selection-highlight]');
-    if (highlight) {
-      highlight.remove();
-    }
+    // Remove all highlights before clearing
+    const highlights = document.querySelectorAll('[data-selection-highlight]');
+    highlights.forEach(h => h.remove());
 
     setShowContextMenu(false);
     setSelectedText('');
