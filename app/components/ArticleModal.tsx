@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, ExternalLink, Loader2, Copy } from 'lucide-react';
+import { X, ExternalLink, Loader2, Copy, Send } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
 
@@ -218,6 +218,25 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     }
   };
 
+  const handleSendToMicroblog = () => {
+    if (!selectedText) return;
+
+    // Format as markdown with citation at the beginning
+    const lines = selectedText.split('\n');
+    const quotedLines = lines.map(line => `> ${line}`).join('\n');
+    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}`;
+
+    // URL encode the markdown and open in new tab
+    const encodedMarkdown = encodeURIComponent(markdown);
+    const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+
+    setShowContextMenu(false);
+    setSelectedText('');
+    window.getSelection()?.removeAllRanges();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -329,6 +348,13 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
             >
               <Copy size={16} />
               Copy Quote
+            </button>
+            <button
+              onClick={handleSendToMicroblog}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+            >
+              <Send size={16} />
+              Send to Microblog
             </button>
           </div>
         )}
