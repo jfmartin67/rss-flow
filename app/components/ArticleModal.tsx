@@ -118,7 +118,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           height: ${rect.height}px;
           background-color: rgba(59, 130, 246, 0.35);
           pointer-events: none;
-          z-index: 99999;
+          z-index: 51;
           mix-blend-mode: multiply;
         `;
 
@@ -468,7 +468,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         {showContextMenu && (
           <div
             data-context-menu
-            className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl py-1 min-w-40"
+            className="fixed z-[100] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl py-1 min-w-40"
             style={{
               top: `${menuPosition.y}px`,
               left: `${menuPosition.x}px`,
