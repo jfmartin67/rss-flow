@@ -1,8 +1,7 @@
-import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
+import * as cheerio from 'cheerio';
 
 /**
- * Extracts the full article content from a URL using Mozilla's Readability algorithm.
+ * Extracts the full article content from a URL using a lightweight extraction algorithm.
  * This is useful when RSS feeds only provide excerpts.
  *
  * @param url - The URL of the article to extract
@@ -23,17 +22,52 @@ export async function extractFullArticle(url: string): Promise<string | null> {
     }
 
     const html = await response.text();
+    const $ = cheerio.load(html);
 
-    // Parse with JSDOM
-    const dom = new JSDOM(html, { url });
-    const reader = new Readability(dom.window.document);
-    const article = reader.parse();
+    // Remove unwanted elements
+    $('script, style, nav, header, footer, aside, iframe, .ad, .ads, .advertisement, .social-share, .comments').remove();
 
-    if (!article || !article.content) {
+    // Try to find main content in order of preference
+    let content = $('article').first();
+
+    if (content.length === 0) {
+      content = $('main').first();
+    }
+
+    if (content.length === 0) {
+      content = $('[role="main"]').first();
+    }
+
+    if (content.length === 0) {
+      // Find the element with the most paragraph content
+      let maxLength = 0;
+      let bestElement = null;
+
+      $('div').each((_, element) => {
+        const textLength = $(element).find('p').text().length;
+        if (textLength > maxLength) {
+          maxLength = textLength;
+          bestElement = element;
+        }
+      });
+
+      if (bestElement) {
+        content = $(bestElement);
+      }
+    }
+
+    if (content.length === 0) {
       return null;
     }
 
-    return article.content;
+    // Clean up the content
+    const extractedHtml = content.html();
+
+    if (!extractedHtml || extractedHtml.length < 100) {
+      return null;
+    }
+
+    return extractedHtml;
   } catch (error) {
     console.error(`Error extracting article from ${url}:`, error);
     return null;
