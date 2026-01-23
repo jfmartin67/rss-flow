@@ -26,7 +26,7 @@ export async function fetchFeedMetadata(url: string): Promise<FeedMetadata> {
   }
 }
 
-export async function fetchFeedArticles(feed: Feed): Promise<Article[]> {
+export async function fetchFeedArticles(feed: Feed, includeContent: boolean = false): Promise<Article[]> {
   try {
     const parsedFeed = await parser.parseURL(feed.url);
 
@@ -39,14 +39,38 @@ export async function fetchFeedArticles(feed: Feed): Promise<Article[]> {
       title: item.title || '',
       link: item.link || '',
       pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
-      content: item.contentSnippet || item.content || item.summary || '',
+      content: includeContent ? (item.contentSnippet || item.content || item.summary || '') : '',
       feedName: feed.name,
+      feedUrl: feed.url,
       category: feed.category,
       categoryColor: feed.color,
     }));
   } catch (error) {
     console.error(`Error fetching articles from ${feed.url}:`, error);
     return [];
+  }
+}
+
+export async function fetchArticleContent(feedUrl: string, articleGuid: string): Promise<string> {
+  try {
+    const parsedFeed = await parser.parseURL(feedUrl);
+
+    if (!parsedFeed.items) {
+      return '';
+    }
+
+    const item = parsedFeed.items.find(
+      item => (item.guid || item.link || item.title) === articleGuid
+    );
+
+    if (!item) {
+      return '';
+    }
+
+    return item.contentSnippet || item.content || item.summary || '';
+  } catch (error) {
+    console.error(`Error fetching article content from ${feedUrl}:`, error);
+    return '';
   }
 }
 

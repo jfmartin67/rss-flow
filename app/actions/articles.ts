@@ -2,7 +2,7 @@
 
 import { Article, TimeRange } from '@/types';
 import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead } from '@/lib/db';
-import { fetchAllFeeds } from '@/lib/rss';
+import { fetchAllFeeds, fetchArticleContent as rssFetchArticleContent } from '@/lib/rss';
 import { filterByTimeRange, interleaveArticles } from '@/lib/utils';
 
 export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<Article[]> {
@@ -45,5 +45,18 @@ export async function getReadArticlesList(): Promise<string[]> {
   } catch (error) {
     console.error('Error getting read articles:', error);
     return [];
+  }
+}
+
+export async function fetchArticleContent(feedUrl: string, articleGuid: string): Promise<{ success: boolean; content?: string; error?: string }> {
+  try {
+    const content = await rssFetchArticleContent(feedUrl, articleGuid);
+    return { success: true, content };
+  } catch (error) {
+    console.error('Error fetching article content:', error);
+    return {
+      success: false,
+      error: 'Failed to fetch article content',
+    };
   }
 }

@@ -13,6 +13,7 @@ export interface Article {
   pubDate: Date;
   content: string;
   feedName: string;
+  feedUrl: string;
   category: string;
   categoryColor: string;
 }

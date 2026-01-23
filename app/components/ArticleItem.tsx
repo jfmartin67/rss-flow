@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Article, ContentLines } from '@/types';
 import { formatRelativeTime, truncateContent } from '@/lib/utils';
-import { markAsRead } from '@/app/actions/articles';
+import { markAsRead, fetchArticleContent } from '@/app/actions/articles';
 import ArticleModal from './ArticleModal';
 
 interface ArticleItemProps {
@@ -16,6 +16,8 @@ interface ArticleItemProps {
 
 export default function ArticleItem({ article, isRead, contentLines, onRead }: ArticleItemProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fullContent, setFullContent] = useState<string | null>(null);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   const handleClick = async () => {
     // Open article in new tab
@@ -27,6 +29,28 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
     if (!isRead) {
       onRead(article.guid);
       await markAsRead(article.guid);
+    }
+  };
+
+  const handleOpenModal = async () => {
+    setIsModalOpen(true);
+
+    // Mark as read
+    if (!isRead) {
+      onRead(article.guid);
+      markAsRead(article.guid);
+    }
+
+    // Fetch content if not already loaded
+    if (fullContent === null && !isLoadingContent) {
+      setIsLoadingContent(true);
+      const result = await fetchArticleContent(article.feedUrl, article.guid);
+      if (result.success && result.content) {
+        setFullContent(result.content);
+      } else {
+        setFullContent('Failed to load article content.');
+      }
+      setIsLoadingContent(false);
     }
   };
 
@@ -67,11 +91,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsModalOpen(true);
-                  if (!isRead) {
-                    onRead(article.guid);
-                    markAsRead(article.guid);
-                  }
+                  handleOpenModal();
                 }}
                 className="p-1 text-gray-400 hover:text-orange-500 dark:text-gray-500 dark:hover:text-orange-400 transition-colors flex-shrink-0"
                 title="Read full article"
@@ -105,6 +125,8 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
         article={article}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        content={fullContent}
+        isLoading={isLoadingContent}
       />
     </article>
   );

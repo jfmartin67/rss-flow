@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import { X, ExternalLink, Loader2 } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
 
@@ -9,9 +9,11 @@ interface ArticleModalProps {
   article: Article;
   isOpen: boolean;
   onClose: () => void;
+  content: string | null;
+  isLoading: boolean;
 }
 
-export default function ArticleModal({ article, isOpen, onClose }: ArticleModalProps) {
+export default function ArticleModal({ article, isOpen, onClose, content, isLoading }: ArticleModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle escape key
@@ -141,10 +143,20 @@ export default function ArticleModal({ article, isOpen, onClose }: ArticleModalP
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div
-            className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-orange-500 hover:prose-a:text-orange-600"
-            dangerouslySetInnerHTML={{ __html: article.content }}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+            </div>
+          ) : content ? (
+            <div
+              className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-orange-500 hover:prose-a:text-orange-600"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+          ) : (
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              No content available
+            </div>
+          )}
         </div>
 
         {/* Footer */}
