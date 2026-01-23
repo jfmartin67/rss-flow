@@ -79,7 +79,12 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-200"
-        onClick={onClose}
+        onClick={(e) => {
+          // Only close if clicking the backdrop itself, not bubbled events
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
         aria-hidden="true"
       />
 
@@ -89,10 +94,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         role="dialog"
         aria-modal="true"
         aria-labelledby="article-modal-title"
+        onClick={(e) => e.stopPropagation()}
         className="fixed inset-4 md:inset-8 lg:inset-16 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex items-start justify-between gap-4 p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 select-text">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span
@@ -142,14 +148,14 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 select-text">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             </div>
           ) : content ? (
             <div
-              className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-orange-500 hover:prose-a:text-orange-600"
+              className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-orange-500 hover:prose-a:text-orange-600 select-text cursor-text"
               dangerouslySetInnerHTML={{ __html: content }}
             />
           ) : (
