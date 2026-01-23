@@ -468,7 +468,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         {showContextMenu && (
           <div
             data-context-menu
-            className="fixed z-[100] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl py-1 min-w-40"
+            className="fixed z-[100] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-2xl py-1 min-w-40 isolate"
             style={{
               top: `${menuPosition.y}px`,
               left: `${menuPosition.x}px`,
