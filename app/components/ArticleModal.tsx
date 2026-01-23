@@ -93,34 +93,48 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       // Get all rectangles for the selection (handles multi-line selections)
       const rects = range.getClientRects();
 
-      if (rects.length === 0) return;
+      console.log('Creating highlight for', rects.length, 'rectangles');
+
+      if (rects.length === 0) {
+        console.warn('No rectangles found for selection');
+        return;
+      }
 
       // Create a container for all highlight rectangles
       const container = document.createElement('div');
       container.setAttribute('data-selection-highlight', 'true');
-      container.style.position = 'fixed';
-      container.style.pointerEvents = 'none';
-      container.style.zIndex = '9999';
-      container.style.top = '0';
-      container.style.left = '0';
+      container.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 99999;
+      `;
 
       // Create a highlight rect for each line
       for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
+        console.log('Rect', i, ':', rect.left, rect.top, rect.width, rect.height);
+
         const highlightRect = document.createElement('div');
-        highlightRect.style.position = 'absolute';
-        highlightRect.style.backgroundColor = '#3b82f6';
-        highlightRect.style.opacity = '0.4';
-        highlightRect.style.left = `${rect.left}px`;
-        highlightRect.style.top = `${rect.top}px`;
-        highlightRect.style.width = `${rect.width}px`;
-        highlightRect.style.height = `${rect.height}px`;
-        highlightRect.style.pointerEvents = 'none';
+        highlightRect.style.cssText = `
+          position: fixed;
+          left: ${rect.left}px;
+          top: ${rect.top}px;
+          width: ${rect.width}px;
+          height: ${rect.height}px;
+          background-color: rgba(59, 130, 246, 0.3);
+          pointer-events: none;
+          border: 2px solid #3b82f6;
+        `;
         container.appendChild(highlightRect);
       }
 
       document.body.appendChild(container);
       highlightSpanRef.current = container as any;
+      console.log('Highlight created and added to body');
     };
 
     // Helper to remove visual highlight
