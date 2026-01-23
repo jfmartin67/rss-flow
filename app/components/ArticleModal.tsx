@@ -146,6 +146,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     // Hide menu when clicking/tapping elsewhere
     const handleClickOutside = (e: Event) => {
+      // Ignore right-clicks (they're handled by contextmenu event)
+      if (e instanceof MouseEvent && e.button === 2) {
+        return;
+      }
+
       // Don't hide if clicking on the menu itself
       if (showContextMenu && e.target instanceof Node) {
         const menuElement = document.querySelector('[data-context-menu]');
