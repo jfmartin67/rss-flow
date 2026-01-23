@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { X, ExternalLink, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, ExternalLink, Loader2, Copy, Check } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
 
@@ -15,6 +15,11 @@ interface ArticleModalProps {
 
 export default function ArticleModal({ article, isOpen, onClose, content, isLoading }: ArticleModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [selectedText, setSelectedText] = useState('');
+  const [showCopyButton, setShowCopyButton] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0 });
+  const [copied, setCopied] = useState(false);
 
   // Handle escape key
   useEffect(() => {
@@ -71,6 +76,61 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       modal.removeEventListener('keydown', handleTab as any);
     };
   }, [isOpen]);
+
+  // Handle text selection
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim() || '';
+
+      if (text && contentRef.current?.contains(selection?.anchorNode || null)) {
+        setSelectedText(text);
+        setShowCopyButton(true);
+        setCopied(false);
+
+        // Position the button near the selection
+        const range = selection?.getRangeAt(0);
+        if (range) {
+          const rect = range.getBoundingClientRect();
+          setButtonPosition({
+            top: rect.bottom + window.scrollY + 8,
+            left: rect.left + window.scrollX,
+          });
+        }
+      } else {
+        setShowCopyButton(false);
+        setSelectedText('');
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  }, [isOpen]);
+
+  const handleCopyQuote = async () => {
+    if (!selectedText) return;
+
+    // Format as markdown blockquote with citation
+    const markdown = `> ${selectedText.split('\n').join('\n> ')}\n\n— [${article.title}](${article.link}) by ${article.feedName}`;
+
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setCopied(true);
+      setTimeout(() => {
+        setShowCopyButton(false);
+        setSelectedText('');
+        setCopied(false);
+        window.getSelection()?.removeAllRanges();
+      }, 1500);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -148,19 +208,48 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 select-text">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 select-text relative">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             </div>
           ) : content ? (
             <div
+              ref={contentRef}
               className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-orange-500 hover:prose-a:text-orange-600 select-text cursor-text"
               dangerouslySetInnerHTML={{ __html: content }}
             />
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               No content available
+            </div>
+          )}
+
+          {/* Copy Quote Button */}
+          {showCopyButton && (
+            <div
+              className="fixed z-50"
+              style={{
+                top: `${buttonPosition.top}px`,
+                left: `${buttonPosition.left}px`,
+              }}
+            >
+              <button
+                onClick={handleCopyQuote}
+                className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+              >
+                {copied ? (
+                  <>
+                    <Check size={16} />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={16} />
+                    Copy Quote
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>
