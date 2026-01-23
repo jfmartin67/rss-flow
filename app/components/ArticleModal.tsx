@@ -256,7 +256,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }
 
       // Don't hide if clicking on the menu itself
-      if (showContextMenu && e.target instanceof Node) {
+      if (e.target instanceof Node) {
         const menuElement = document.querySelector('[data-context-menu]');
         if (menuElement?.contains(e.target)) {
           console.log('Click on menu, ignoring');
@@ -315,7 +315,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isOpen, content, showContextMenu]);
+  }, [isOpen, content]); // Removed showContextMenu to prevent effect re-run from removing highlights
 
   const handleCopyQuote = async () => {
     if (!selectedText) return;
