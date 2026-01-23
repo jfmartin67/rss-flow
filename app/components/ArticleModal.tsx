@@ -319,7 +319,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           ) : content ? (
             <div
               ref={contentRef}
-              className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-orange-500 hover:prose-a:text-orange-600 select-text cursor-text"
+              className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-900 dark:prose-p:text-gray-200 prose-a:text-orange-500 hover:prose-a:text-orange-600 select-text cursor-text"
               dangerouslySetInnerHTML={{ __html: content }}
             />
           ) : (
