@@ -100,7 +100,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       container.setAttribute('data-selection-highlight', 'true');
       container.style.position = 'fixed';
       container.style.pointerEvents = 'none';
-      container.style.zIndex = '40';
+      container.style.zIndex = '9999';
+      container.style.top = '0';
+      container.style.left = '0';
 
       // Create a highlight rect for each line
       for (let i = 0; i < rects.length; i++) {
@@ -108,11 +110,12 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         const highlightRect = document.createElement('div');
         highlightRect.style.position = 'absolute';
         highlightRect.style.backgroundColor = '#3b82f6';
-        highlightRect.style.opacity = '0.3';
+        highlightRect.style.opacity = '0.4';
         highlightRect.style.left = `${rect.left}px`;
         highlightRect.style.top = `${rect.top}px`;
         highlightRect.style.width = `${rect.width}px`;
         highlightRect.style.height = `${rect.height}px`;
+        highlightRect.style.pointerEvents = 'none';
         container.appendChild(highlightRect);
       }
 
@@ -145,22 +148,18 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         );
 
         if (isWithinContent) {
-          e.preventDefault();
-
-          // Save the selection range to restore it later
+          // Save the selection range and create highlight BEFORE preventing default
           const range = selection.getRangeAt(0);
           selectionRangeRef.current = range.cloneRange();
+
+          // Create visual highlight immediately to keep selection visible
+          createHighlight(range.cloneRange());
+
+          e.preventDefault();
 
           setSelectedText(text);
           setMenuPosition({ x: e.clientX, y: e.clientY });
           setShowContextMenu(true);
-
-          // Create visual highlight to keep selection visible
-          setTimeout(() => {
-            if (selectionRangeRef.current) {
-              createHighlight(selectionRangeRef.current.cloneRange());
-            }
-          }, 0);
         }
       }
     };
