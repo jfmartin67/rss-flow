@@ -151,11 +151,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const handleCopyQuote = async () => {
     if (!selectedText) return;
 
-    // Format as markdown blockquote with citation
+    // Format as markdown with citation at the beginning
     // Split by newlines and add > prefix to each line
     const lines = selectedText.split('\n');
     const quotedLines = lines.map(line => `> ${line}`).join('\n');
-    const markdown = `${quotedLines}\n\n— [${article.title?.trim() || 'Untitled'}](${article.link}) by ${article.feedName}`;
+    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}`;
 
     try {
       await navigator.clipboard.writeText(markdown);

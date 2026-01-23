@@ -1,5 +1,6 @@
 import Parser from 'rss-parser';
 import { Article, Feed } from '@/types';
+import { extractFullArticle } from './extract';
 
 const parser = new Parser({
   timeout: 10000,
@@ -68,7 +69,27 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
       return '';
     }
 
-    return item.contentSnippet || item.content || item.summary || '';
+    // Get content from RSS
+    const rssContent = item.content || item.summary || '';
+    const contentSnippet = item.contentSnippet || '';
+
+    // If RSS provides full content (HTML with reasonable length), use it
+    if (rssContent && rssContent.length > 500) {
+      return rssContent;
+    }
+
+    // If content snippet is very short (likely an excerpt), try to extract full article
+    if (contentSnippet.length < 500 && item.link) {
+      console.log(`RSS content appears to be an excerpt (${contentSnippet.length} chars), attempting full article extraction from ${item.link}`);
+      const extractedContent = await extractFullArticle(item.link);
+
+      if (extractedContent) {
+        return extractedContent;
+      }
+    }
+
+    // Fallback to whatever RSS provided
+    return rssContent || contentSnippet;
   } catch (error) {
     console.error(`Error fetching article content from ${feedUrl}:`, error);
     return '';
