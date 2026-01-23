@@ -157,8 +157,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           );
 
           if (isWithinContent) {
+            console.log('Right-click mousedown: preventing default and stopping propagation');
             // Prevent mousedown from clearing the selection
             e.preventDefault();
+            // Stop event from bubbling to document listener
+            e.stopPropagation();
 
             // Save the range immediately
             const range = selection.getRangeAt(0);
@@ -246,8 +249,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     // Hide menu when clicking/tapping elsewhere
     const handleClickOutside = (e: Event) => {
-      // Ignore right-clicks (they're handled by contextmenu event)
+      // Ignore right-clicks completely (they're handled by contextmenu event)
       if (e instanceof MouseEvent && e.button === 2) {
+        console.log('Ignoring right-click in handleClickOutside');
         return;
       }
 
@@ -255,9 +259,12 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       if (showContextMenu && e.target instanceof Node) {
         const menuElement = document.querySelector('[data-context-menu]');
         if (menuElement?.contains(e.target)) {
+          console.log('Click on menu, ignoring');
           return;
         }
       }
+
+      console.log('handleClickOutside: hiding menu and removing highlight');
 
       // On desktop, just hide the menu
       if (!isTouchDevice) {
