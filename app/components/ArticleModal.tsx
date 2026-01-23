@@ -76,10 +76,14 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     };
   }, [isOpen]);
 
-  // Handle context menu for text selection
+  // Handle context menu for text selection (desktop and mobile)
   useEffect(() => {
     if (!isOpen || !content) return;
 
+    let longPressTimer: NodeJS.Timeout | null = null;
+    let touchStartPos = { x: 0, y: 0 };
+
+    // Desktop: right-click
     const handleContextMenu = (e: MouseEvent) => {
       const selection = window.getSelection();
       const text = selection?.toString().trim() || '';
@@ -103,22 +107,94 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }
     };
 
-    // Hide menu when clicking elsewhere
+    // Mobile: long-press
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      touchStartPos = { x: touch.clientX, y: touch.clientY };
+
+      // Clear any existing timer
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+
+      // Start long-press timer (500ms)
+      longPressTimer = setTimeout(() => {
+        const selection = window.getSelection();
+        const text = selection?.toString().trim() || '';
+
+        if (text && selection && selection.rangeCount > 0) {
+          const anchorNode = selection.anchorNode;
+          const focusNode = selection.focusNode;
+
+          const isWithinContent = contentRef.current && (
+            contentRef.current.contains(anchorNode) ||
+            contentRef.current.contains(focusNode)
+          );
+
+          if (isWithinContent) {
+            e.preventDefault();
+            setSelectedText(text);
+            setMenuPosition({ x: touchStartPos.x, y: touchStartPos.y });
+            setShowContextMenu(true);
+          }
+        }
+      }, 500);
+    };
+
+    const handleTouchEnd = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // Cancel long-press if finger moves too much
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+      const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+
+      if (deltaX > 10 || deltaY > 10) {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      }
+    };
+
+    // Hide menu when clicking/tapping elsewhere
     const handleClick = () => {
       setShowContextMenu(false);
     };
 
     const contentEl = contentRef.current;
     if (contentEl) {
+      // Desktop events
       contentEl.addEventListener('contextmenu', handleContextMenu);
+
+      // Mobile events
+      contentEl.addEventListener('touchstart', handleTouchStart, { passive: false });
+      contentEl.addEventListener('touchend', handleTouchEnd);
+      contentEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+      // Hide menu
       document.addEventListener('click', handleClick);
+      document.addEventListener('touchstart', handleClick);
     }
 
     return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+
       if (contentEl) {
         contentEl.removeEventListener('contextmenu', handleContextMenu);
+        contentEl.removeEventListener('touchstart', handleTouchStart as any);
+        contentEl.removeEventListener('touchend', handleTouchEnd);
+        contentEl.removeEventListener('touchmove', handleTouchMove as any);
       }
       document.removeEventListener('click', handleClick);
+      document.removeEventListener('touchstart', handleClick);
     };
   }, [isOpen, content]);
 
