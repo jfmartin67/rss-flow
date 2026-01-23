@@ -26,7 +26,7 @@ export async function fetchFeedMetadata(url: string): Promise<FeedMetadata> {
   }
 }
 
-export async function fetchFeedArticles(feed: Feed, includeContent: boolean = false): Promise<Article[]> {
+export async function fetchFeedArticles(feed: Feed): Promise<Article[]> {
   try {
     const parsedFeed = await parser.parseURL(feed.url);
 
@@ -39,7 +39,8 @@ export async function fetchFeedArticles(feed: Feed, includeContent: boolean = fa
       title: item.title || '',
       link: item.link || '',
       pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
-      content: includeContent ? (item.contentSnippet || item.content || item.summary || '') : '',
+      // Always include contentSnippet for preview, but not full content
+      content: item.contentSnippet || '',
       feedName: feed.name,
       feedUrl: feed.url,
       category: feed.category,
