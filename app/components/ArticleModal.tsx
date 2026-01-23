@@ -16,6 +16,7 @@ interface ArticleModalProps {
 export default function ArticleModal({ article, isOpen, onClose, content, isLoading }: ArticleModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const selectionRangeRef = useRef<Range | null>(null);
   const [selectedText, setSelectedText] = useState('');
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -100,9 +101,22 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
         if (isWithinContent) {
           e.preventDefault();
+
+          // Save the selection range to restore it later
+          selectionRangeRef.current = selection.getRangeAt(0).cloneRange();
+
           setSelectedText(text);
           setMenuPosition({ x: e.clientX, y: e.clientY });
           setShowContextMenu(true);
+
+          // Restore selection after a brief moment to ensure it stays visible
+          setTimeout(() => {
+            if (selectionRangeRef.current) {
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(selectionRangeRef.current);
+            }
+          }, 0);
         }
       }
     };
@@ -129,6 +143,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           const range = selection.getRangeAt(0);
           const rect = range.getBoundingClientRect();
 
+          // Save the selection range
+          selectionRangeRef.current = range.cloneRange();
+
           setSelectedText(text);
           // Position menu at the end of selection
           setMenuPosition({
@@ -141,6 +158,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         // No selection, hide menu
         setShowContextMenu(false);
         setSelectedText('');
+        selectionRangeRef.current = null;
       }
     };
 
@@ -162,6 +180,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       // On desktop, just hide the menu
       if (!isTouchDevice) {
         setShowContextMenu(false);
+        selectionRangeRef.current = null;
         return;
       }
 
@@ -172,6 +191,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         if (!text) {
           setShowContextMenu(false);
           setSelectedText('');
+          selectionRangeRef.current = null;
         }
       }, 10);
     };
@@ -214,6 +234,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       await navigator.clipboard.writeText(markdown);
       setShowContextMenu(false);
       setSelectedText('');
+      selectionRangeRef.current = null;
       window.getSelection()?.removeAllRanges();
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
@@ -237,6 +258,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     setShowContextMenu(false);
     setSelectedText('');
+    selectionRangeRef.current = null;
     window.getSelection()?.removeAllRanges();
   };
 
