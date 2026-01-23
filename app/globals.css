@@ -32,6 +32,19 @@ body {
   color: #111827 !important; /* gray-900 */
 }
 
+/* Handle broken images gracefully to prevent layout shifts */
+.article-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Hide broken images to prevent layout jumps */
+.article-content img[src=""],
+.article-content img:not([src]) {
+  display: none;
+}
+
 /* Links should remain orange */
 .article-content a,
 .article-content a * {

@@ -132,15 +132,45 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }
     };
 
+    // Prevent right-click mousedown from clearing selection
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button === 2) { // Right mouse button
+        const selection = window.getSelection();
+        const text = selection?.toString().trim() || '';
+
+        if (text && selection && selection.rangeCount > 0) {
+          const anchorNode = selection.anchorNode;
+          const focusNode = selection.focusNode;
+
+          const isWithinContent = contentRef.current && (
+            contentRef.current.contains(anchorNode) ||
+            contentRef.current.contains(focusNode)
+          );
+
+          if (isWithinContent) {
+            // Prevent mousedown from clearing the selection
+            e.preventDefault();
+
+            // Save the range immediately
+            const range = selection.getRangeAt(0);
+            selectionRangeRef.current = range.cloneRange();
+          }
+        }
+      }
+    };
+
     // Desktop: right-click
     const handleContextMenu = (e: MouseEvent) => {
       const selection = window.getSelection();
       const text = selection?.toString().trim() || '';
 
-      if (text && selection && selection.rangeCount > 0) {
+      // If we saved a range from mousedown, use it
+      const range = selectionRangeRef.current || (selection?.rangeCount ? selection.getRangeAt(0) : null);
+
+      if ((text || selectionRangeRef.current) && range) {
         // Check if selection is within the content area
-        const anchorNode = selection.anchorNode;
-        const focusNode = selection.focusNode;
+        const anchorNode = selection?.anchorNode || range.startContainer;
+        const focusNode = selection?.focusNode || range.endContainer;
 
         const isWithinContent = contentRef.current && (
           contentRef.current.contains(anchorNode) ||
@@ -148,16 +178,15 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         );
 
         if (isWithinContent) {
-          // Save the selection range and create highlight BEFORE preventing default
-          const range = selection.getRangeAt(0);
-          selectionRangeRef.current = range.cloneRange();
+          e.preventDefault();
+
+          // Use the saved text or get it from the range
+          const selectionText = text || range.toString().trim();
 
           // Create visual highlight immediately to keep selection visible
           createHighlight(range.cloneRange());
 
-          e.preventDefault();
-
-          setSelectedText(text);
+          setSelectedText(selectionText);
           setMenuPosition({ x: e.clientX, y: e.clientY });
           setShowContextMenu(true);
         }
@@ -244,6 +273,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     const contentEl = contentRef.current;
     if (contentEl) {
+      // Desktop: prevent right-click from clearing selection
+      contentEl.addEventListener('mousedown', handleMouseDown);
+
       // Desktop: right-click context menu
       contentEl.addEventListener('contextmenu', handleContextMenu);
 
@@ -260,6 +292,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     return () => {
       removeHighlight();
       if (contentEl) {
+        contentEl.removeEventListener('mousedown', handleMouseDown);
         contentEl.removeEventListener('contextmenu', handleContextMenu);
       }
       document.removeEventListener('selectionchange', handleSelectionChange);
