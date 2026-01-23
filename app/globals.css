@@ -25,3 +25,29 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Keep text selection visible when context menu is open */
+.preserve-selection::selection {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.preserve-selection::-moz-selection {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Force selection to remain visible even when window is inactive */
+.preserve-selection {
+  caret-color: transparent;
+}
+
+.preserve-selection *::selection {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+.preserve-selection *::-moz-selection {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}

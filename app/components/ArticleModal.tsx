@@ -17,6 +17,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const selectionRangeRef = useRef<Range | null>(null);
+  const highlightSpanRef = useRef<HTMLSpanElement | null>(null);
   const [selectedText, setSelectedText] = useState('');
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -84,6 +85,39 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     // Detect if device has touch capability
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+    // Helper to create visual highlight
+    const createHighlight = (range: Range) => {
+      // Remove any existing highlight
+      removeHighlight();
+
+      // Create a span to highlight the selection
+      const span = document.createElement('span');
+      span.style.backgroundColor = '#3b82f6';
+      span.style.color = 'white';
+      span.setAttribute('data-selection-highlight', 'true');
+
+      try {
+        range.surroundContents(span);
+        highlightSpanRef.current = span;
+      } catch (e) {
+        // If surroundContents fails (e.g., range spans multiple elements),
+        // fall back to keeping the browser's native selection
+        console.warn('Could not create highlight:', e);
+      }
+    };
+
+    // Helper to remove visual highlight
+    const removeHighlight = () => {
+      if (highlightSpanRef.current && highlightSpanRef.current.parentNode) {
+        const parent = highlightSpanRef.current.parentNode;
+        while (highlightSpanRef.current.firstChild) {
+          parent.insertBefore(highlightSpanRef.current.firstChild, highlightSpanRef.current);
+        }
+        parent.removeChild(highlightSpanRef.current);
+        highlightSpanRef.current = null;
+      }
+    };
+
     // Desktop: right-click
     const handleContextMenu = (e: MouseEvent) => {
       const selection = window.getSelection();
@@ -103,18 +137,17 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           e.preventDefault();
 
           // Save the selection range to restore it later
-          selectionRangeRef.current = selection.getRangeAt(0).cloneRange();
+          const range = selection.getRangeAt(0);
+          selectionRangeRef.current = range.cloneRange();
 
           setSelectedText(text);
           setMenuPosition({ x: e.clientX, y: e.clientY });
           setShowContextMenu(true);
 
-          // Restore selection after a brief moment to ensure it stays visible
+          // Create visual highlight to keep selection visible
           setTimeout(() => {
             if (selectionRangeRef.current) {
-              const sel = window.getSelection();
-              sel?.removeAllRanges();
-              sel?.addRange(selectionRangeRef.current);
+              createHighlight(selectionRangeRef.current.cloneRange());
             }
           }, 0);
         }
@@ -159,6 +192,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         setShowContextMenu(false);
         setSelectedText('');
         selectionRangeRef.current = null;
+        removeHighlight();
       }
     };
 
@@ -181,6 +215,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       if (!isTouchDevice) {
         setShowContextMenu(false);
         selectionRangeRef.current = null;
+        removeHighlight();
         return;
       }
 
@@ -192,6 +227,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           setShowContextMenu(false);
           setSelectedText('');
           selectionRangeRef.current = null;
+          removeHighlight();
         }
       }, 10);
     };
@@ -212,6 +248,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     }
 
     return () => {
+      removeHighlight();
       if (contentEl) {
         contentEl.removeEventListener('contextmenu', handleContextMenu);
       }
@@ -232,6 +269,17 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     try {
       await navigator.clipboard.writeText(markdown);
+
+      // Remove highlight before clearing
+      if (highlightSpanRef.current && highlightSpanRef.current.parentNode) {
+        const parent = highlightSpanRef.current.parentNode;
+        while (highlightSpanRef.current.firstChild) {
+          parent.insertBefore(highlightSpanRef.current.firstChild, highlightSpanRef.current);
+        }
+        parent.removeChild(highlightSpanRef.current);
+        highlightSpanRef.current = null;
+      }
+
       setShowContextMenu(false);
       setSelectedText('');
       selectionRangeRef.current = null;
@@ -255,6 +303,16 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
 
     window.open(url, '_blank', 'noopener,noreferrer');
+
+    // Remove highlight before clearing
+    if (highlightSpanRef.current && highlightSpanRef.current.parentNode) {
+      const parent = highlightSpanRef.current.parentNode;
+      while (highlightSpanRef.current.firstChild) {
+        parent.insertBefore(highlightSpanRef.current.firstChild, highlightSpanRef.current);
+      }
+      parent.removeChild(highlightSpanRef.current);
+      highlightSpanRef.current = null;
+    }
 
     setShowContextMenu(false);
     setSelectedText('');
@@ -346,7 +404,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           ) : content ? (
             <div
               ref={contentRef}
-              className="prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-900 dark:prose-p:text-gray-200 prose-a:text-orange-500 hover:prose-a:text-orange-600 select-text cursor-text [&_p]:!text-gray-900 dark:[&_p]:!text-gray-100 [&_div]:!text-gray-900 dark:[&_div]:!text-gray-100 [&_span]:!text-gray-900 dark:[&_span]:!text-gray-100 [&_li]:!text-gray-900 dark:[&_li]:!text-gray-100"
+              className={`prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-900 dark:prose-p:text-gray-200 prose-a:text-orange-500 hover:prose-a:text-orange-600 select-text cursor-text [&_p]:!text-gray-900 dark:[&_p]:!text-gray-100 [&_div]:!text-gray-900 dark:[&_div]:!text-gray-100 [&_span]:!text-gray-900 dark:[&_span]:!text-gray-100 [&_li]:!text-gray-900 dark:[&_li]:!text-gray-100 ${showContextMenu ? 'preserve-selection' : ''}`}
               dangerouslySetInnerHTML={{ __html: content }}
             />
           ) : (
