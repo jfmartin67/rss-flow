@@ -105,17 +105,26 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
             </div>
           </div>
           {contentLines > 0 && article.content && article.title?.trim() && (
-            <p
-              className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mt-1"
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: contentLines,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {truncateContent(article.content, contentLines as 1 | 2 | 3)}
-            </p>
+            <div className="flex items-start gap-2 mt-1">
+              {/* Spacer to align with metadata section */}
+              <div className="w-64 flex-shrink-0" />
+              {/* Content preview aligned with title */}
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                {/* Spacer for read button alignment */}
+                <div className="w-6 flex-shrink-0" />
+                <p
+                  className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed flex-1"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: contentLines,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {truncateContent(article.content, contentLines as 1 | 2 | 3)}
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>
