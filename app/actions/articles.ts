@@ -3,7 +3,7 @@
 import { Article, TimeRange } from '@/types';
 import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead } from '@/lib/db';
 import { fetchAllFeeds } from '@/lib/rss';
-import { filterByTimeRange } from '@/lib/utils';
+import { filterByTimeRange, interleaveArticles } from '@/lib/utils';
 
 export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<Article[]> {
   try {
@@ -18,7 +18,10 @@ export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<Ar
     // Filter by time range
     const filteredArticles = filterByTimeRange(articles, timeRange);
 
-    return filteredArticles;
+    // Apply smart interleaving to balance feed velocity
+    const interleavedArticles = interleaveArticles(filteredArticles, 2);
+
+    return interleavedArticles;
   } catch (error) {
     console.error('Error fetching articles:', error);
     return [];

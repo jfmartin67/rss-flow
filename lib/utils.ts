@@ -67,3 +67,52 @@ export function truncateContent(content: string, lines: ContentLines): string {
 export function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }
+
+/**
+ * Interleaves articles to prevent more than maxConsecutive articles from the same feed appearing in a row.
+ * This helps balance timelines when some feeds publish much more frequently than others.
+ *
+ * @param articles - Articles sorted chronologically (newest first)
+ * @param maxConsecutive - Maximum number of consecutive articles allowed from the same feed (default: 2)
+ * @returns Articles with smart interleaving applied
+ */
+export function interleaveArticles(articles: Article[], maxConsecutive: number = 2): Article[] {
+  if (articles.length <= maxConsecutive) {
+    return articles;
+  }
+
+  const result: Article[] = [];
+  const remaining = [...articles];
+
+  while (remaining.length > 0) {
+    // Get the next article
+    const nextArticle = remaining.shift()!;
+
+    // Check if adding this article would exceed maxConsecutive from the same feed
+    const recentFeeds = result.slice(-maxConsecutive).map(a => a.feedName);
+    const allSameFeed = recentFeeds.length === maxConsecutive &&
+                        recentFeeds.every(name => name === recentFeeds[0]);
+
+    if (allSameFeed && nextArticle.feedName === recentFeeds[0]) {
+      // We would have too many consecutive from the same feed
+      // Look ahead for an article from a different feed
+      const differentFeedIndex = remaining.findIndex(a => a.feedName !== nextArticle.feedName);
+
+      if (differentFeedIndex !== -1) {
+        // Found an article from a different feed, use it instead
+        const swappedArticle = remaining.splice(differentFeedIndex, 1)[0];
+        result.push(swappedArticle);
+        // Put the original article back at the front
+        remaining.unshift(nextArticle);
+      } else {
+        // No other feeds available, just add it anyway
+        result.push(nextArticle);
+      }
+    } else {
+      // Safe to add this article
+      result.push(nextArticle);
+    }
+  }
+
+  return result;
+}
