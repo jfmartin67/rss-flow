@@ -101,22 +101,16 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
             setSelectedText(text);
             setCopied(false);
 
-            // Position the button near the selection
-            try {
-              const range = selection.getRangeAt(0);
-              const rect = range.getBoundingClientRect();
-              const modalRect = modalRef.current?.getBoundingClientRect();
+            // Position the button at the mouse cursor location
+            const modalRect = modalRef.current?.getBoundingClientRect();
 
-              if (modalRect) {
-                setButtonPosition({
-                  top: rect.bottom - modalRect.top + 8,
-                  left: rect.left - modalRect.left,
-                });
-              }
-              setShowCopyButton(true);
-            } catch (error) {
-              console.error('Error positioning button:', error);
+            if (modalRect) {
+              setButtonPosition({
+                top: e.clientY - modalRect.top + 8,
+                left: e.clientX - modalRect.left,
+              });
             }
+            setShowCopyButton(true);
           } else {
             setShowCopyButton(false);
             setSelectedText('');
