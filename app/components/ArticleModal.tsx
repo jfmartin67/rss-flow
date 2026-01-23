@@ -80,9 +80,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   useEffect(() => {
     if (!isOpen || !content) return;
 
-    let longPressTimer: NodeJS.Timeout | null = null;
-    let touchStartPos = { x: 0, y: 0 };
-
     // Desktop: right-click
     const handleContextMenu = (e: MouseEvent) => {
       const selection = window.getSelection();
@@ -107,64 +104,59 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }
     };
 
-    // Mobile: long-press
-    const handleTouchStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      touchStartPos = { x: touch.clientX, y: touch.clientY };
+    // Mobile: detect text selection changes
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim() || '';
 
-      // Clear any existing timer
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
+      if (text && selection && selection.rangeCount > 0) {
+        const anchorNode = selection.anchorNode;
+        const focusNode = selection.focusNode;
+
+        const isWithinContent = contentRef.current && (
+          contentRef.current.contains(anchorNode) ||
+          contentRef.current.contains(focusNode)
+        );
+
+        if (isWithinContent) {
+          // Get the bounding rect of the selection to position menu
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+
+          setSelectedText(text);
+          // Position menu at the end of selection
+          setMenuPosition({
+            x: rect.right,
+            y: rect.bottom + 5
+          });
+          setShowContextMenu(true);
+        }
+      } else {
+        // No selection, hide menu
+        setShowContextMenu(false);
+        setSelectedText('');
+      }
+    };
+
+    // Hide menu when clicking/tapping elsewhere (but not during text selection)
+    const handleClick = (e: Event) => {
+      // Don't hide if clicking on the menu itself
+      if (showContextMenu && e.target instanceof Node) {
+        const menuElement = document.querySelector('[data-context-menu]');
+        if (menuElement?.contains(e.target)) {
+          return;
+        }
       }
 
-      // Start long-press timer (500ms)
-      longPressTimer = setTimeout(() => {
+      // Small delay to allow selection to be detected first
+      setTimeout(() => {
         const selection = window.getSelection();
         const text = selection?.toString().trim() || '';
-
-        if (text && selection && selection.rangeCount > 0) {
-          const anchorNode = selection.anchorNode;
-          const focusNode = selection.focusNode;
-
-          const isWithinContent = contentRef.current && (
-            contentRef.current.contains(anchorNode) ||
-            contentRef.current.contains(focusNode)
-          );
-
-          if (isWithinContent) {
-            e.preventDefault();
-            setSelectedText(text);
-            setMenuPosition({ x: touchStartPos.x, y: touchStartPos.y });
-            setShowContextMenu(true);
-          }
+        if (!text) {
+          setShowContextMenu(false);
+          setSelectedText('');
         }
-      }, 500);
-    };
-
-    const handleTouchEnd = () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      // Cancel long-press if finger moves too much
-      const touch = e.touches[0];
-      const deltaX = Math.abs(touch.clientX - touchStartPos.x);
-      const deltaY = Math.abs(touch.clientY - touchStartPos.y);
-
-      if (deltaX > 10 || deltaY > 10) {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-        }
-      }
-    };
-
-    // Hide menu when clicking/tapping elsewhere
-    const handleClick = () => {
-      setShowContextMenu(false);
+      }, 10);
     };
 
     const contentEl = contentRef.current;
@@ -172,31 +164,23 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       // Desktop events
       contentEl.addEventListener('contextmenu', handleContextMenu);
 
-      // Mobile events
-      contentEl.addEventListener('touchstart', handleTouchStart, { passive: false });
-      contentEl.addEventListener('touchend', handleTouchEnd);
-      contentEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+      // Mobile: listen for selection changes
+      document.addEventListener('selectionchange', handleSelectionChange);
 
       // Hide menu
-      document.addEventListener('click', handleClick);
-      document.addEventListener('touchstart', handleClick);
+      document.addEventListener('mousedown', handleClick);
+      document.addEventListener('touchstart', handleClick, { passive: true });
     }
 
     return () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-      }
-
       if (contentEl) {
         contentEl.removeEventListener('contextmenu', handleContextMenu);
-        contentEl.removeEventListener('touchstart', handleTouchStart as any);
-        contentEl.removeEventListener('touchend', handleTouchEnd);
-        contentEl.removeEventListener('touchmove', handleTouchMove as any);
       }
-      document.removeEventListener('click', handleClick);
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('touchstart', handleClick);
     };
-  }, [isOpen, content]);
+  }, [isOpen, content, showContextMenu]);
 
   const handleCopyQuote = async () => {
     if (!selectedText) return;
@@ -335,6 +319,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         {/* Context Menu */}
         {showContextMenu && (
           <div
+            data-context-menu
             className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl py-1 min-w-40"
             style={{
               top: `${menuPosition.y}px`,
