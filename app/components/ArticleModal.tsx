@@ -77,38 +77,54 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     };
   }, [isOpen]);
 
-  // Handle text selection
+  // Handle text selection - wait for mouseup to avoid flashing during drag
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      const text = selection?.toString().trim() || '';
+    const handleMouseUp = () => {
+      // Small delay to ensure selection is finalized
+      setTimeout(() => {
+        const selection = window.getSelection();
+        const text = selection?.toString().trim() || '';
 
-      if (text && contentRef.current?.contains(selection?.anchorNode || null)) {
-        setSelectedText(text);
-        setShowCopyButton(true);
-        setCopied(false);
+        if (text && contentRef.current?.contains(selection?.anchorNode || null)) {
+          setSelectedText(text);
+          setShowCopyButton(true);
+          setCopied(false);
 
-        // Position the button near the selection
-        const range = selection?.getRangeAt(0);
-        if (range) {
-          const rect = range.getBoundingClientRect();
-          setButtonPosition({
-            top: rect.bottom + window.scrollY + 8,
-            left: rect.left + window.scrollX,
-          });
+          // Position the button near the selection
+          const range = selection?.getRangeAt(0);
+          if (range) {
+            const rect = range.getBoundingClientRect();
+            setButtonPosition({
+              top: rect.bottom + 8,
+              left: rect.left,
+            });
+          }
+        } else {
+          setShowCopyButton(false);
+          setSelectedText('');
         }
-      } else {
-        setShowCopyButton(false);
-        setSelectedText('');
-      }
+      }, 10);
     };
 
-    document.addEventListener('selectionchange', handleSelectionChange);
+    // Hide button when starting a new selection
+    const handleMouseDown = () => {
+      setShowCopyButton(false);
+      setCopied(false);
+    };
+
+    const contentEl = contentRef.current;
+    if (contentEl) {
+      contentEl.addEventListener('mouseup', handleMouseUp);
+      contentEl.addEventListener('mousedown', handleMouseDown);
+    }
 
     return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
+      if (contentEl) {
+        contentEl.removeEventListener('mouseup', handleMouseUp);
+        contentEl.removeEventListener('mousedown', handleMouseDown);
+      }
     };
   }, [isOpen]);
 
@@ -116,7 +132,10 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     if (!selectedText) return;
 
     // Format as markdown blockquote with citation
-    const markdown = `> ${selectedText.split('\n').join('\n> ')}\n\n— [${article.title}](${article.link}) by ${article.feedName}`;
+    // Split by newlines and add > prefix to each line
+    const lines = selectedText.split('\n');
+    const quotedLines = lines.map(line => `> ${line}`).join('\n');
+    const markdown = `${quotedLines}\n\n— [${article.title?.trim() || 'Untitled'}](${article.link}) by ${article.feedName}`;
 
     try {
       await navigator.clipboard.writeText(markdown);
@@ -129,6 +148,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }, 1500);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
+      // Fallback for older browsers or permission issues
+      alert('Failed to copy to clipboard. Please try again.');
     }
   };
 
