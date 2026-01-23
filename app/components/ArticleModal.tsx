@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, ExternalLink, Loader2, Copy, Check } from 'lucide-react';
+import { X, ExternalLink, Loader2, Copy } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
 
@@ -17,9 +17,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [selectedText, setSelectedText] = useState('');
-  const [showCopyButton, setShowCopyButton] = useState(false);
-  const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0 });
-  const [copied, setCopied] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
   // Handle escape key
   useEffect(() => {
@@ -77,68 +76,49 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     };
   }, [isOpen]);
 
-  // Handle text selection - wait for mouseup to avoid flashing during drag
+  // Handle context menu for text selection
   useEffect(() => {
     if (!isOpen || !content) return;
 
-    const handleMouseUp = (e: MouseEvent) => {
-      // Small delay to ensure selection is finalized
-      setTimeout(() => {
-        const selection = window.getSelection();
-        const text = selection?.toString().trim() || '';
+    const handleContextMenu = (e: MouseEvent) => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim() || '';
 
-        if (text && selection && selection.rangeCount > 0) {
-          // Check if selection is within the content area
-          const anchorNode = selection.anchorNode;
-          const focusNode = selection.focusNode;
+      if (text && selection && selection.rangeCount > 0) {
+        // Check if selection is within the content area
+        const anchorNode = selection.anchorNode;
+        const focusNode = selection.focusNode;
 
-          const isWithinContent = contentRef.current && (
-            contentRef.current.contains(anchorNode) ||
-            contentRef.current.contains(focusNode)
-          );
+        const isWithinContent = contentRef.current && (
+          contentRef.current.contains(anchorNode) ||
+          contentRef.current.contains(focusNode)
+        );
 
-          if (isWithinContent) {
-            setSelectedText(text);
-            setCopied(false);
-
-            // Position the button at the mouse cursor location
-            const modalRect = modalRef.current?.getBoundingClientRect();
-
-            if (modalRect) {
-              setButtonPosition({
-                top: e.clientY - modalRect.top + 8,
-                left: e.clientX - modalRect.left,
-              });
-            }
-            setShowCopyButton(true);
-          } else {
-            setShowCopyButton(false);
-            setSelectedText('');
-          }
-        } else {
-          setShowCopyButton(false);
-          setSelectedText('');
+        if (isWithinContent) {
+          e.preventDefault();
+          setSelectedText(text);
+          setMenuPosition({ x: e.clientX, y: e.clientY });
+          setShowContextMenu(true);
         }
-      }, 100);
+      }
     };
 
-    // Hide button when starting a new selection
-    const handleMouseDown = () => {
-      setShowCopyButton(false);
-      setCopied(false);
+    // Hide menu when clicking elsewhere
+    const handleClick = () => {
+      setShowContextMenu(false);
     };
 
-    document.addEventListener('mouseup', handleMouseUp);
     const contentEl = contentRef.current;
     if (contentEl) {
-      contentEl.addEventListener('mousedown', handleMouseDown);
+      contentEl.addEventListener('contextmenu', handleContextMenu);
+      document.addEventListener('click', handleClick);
     }
 
     return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
       if (contentEl) {
-        contentEl.removeEventListener('mousedown', handleMouseDown);
+        contentEl.removeEventListener('contextmenu', handleContextMenu);
       }
+      document.removeEventListener('click', handleClick);
     };
   }, [isOpen, content]);
 
@@ -153,16 +133,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     try {
       await navigator.clipboard.writeText(markdown);
-      setCopied(true);
-      setTimeout(() => {
-        setShowCopyButton(false);
-        setSelectedText('');
-        setCopied(false);
-        window.getSelection()?.removeAllRanges();
-      }, 1500);
+      setShowContextMenu(false);
+      setSelectedText('');
+      window.getSelection()?.removeAllRanges();
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
-      // Fallback for older browsers or permission issues
       alert('Failed to copy to clipboard. Please try again.');
     }
   };
@@ -260,35 +235,27 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
             </div>
           )}
 
-          {/* Copy Quote Button */}
-          {showCopyButton && (
-            <div
-              className="absolute z-50"
-              style={{
-                top: `${buttonPosition.top}px`,
-                left: `${buttonPosition.left}px`,
-              }}
-            >
-              <button
-                onClick={handleCopyQuote}
-                onMouseDown={(e) => e.preventDefault()} // Prevent text deselection
-                className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors text-sm font-medium whitespace-nowrap"
-              >
-                {copied ? (
-                  <>
-                    <Check size={16} />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy size={16} />
-                    Copy Quote
-                  </>
-                )}
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Context Menu */}
+        {showContextMenu && (
+          <div
+            className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl py-1 min-w-40"
+            style={{
+              top: `${menuPosition.y}px`,
+              left: `${menuPosition.x}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleCopyQuote}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+            >
+              <Copy size={16} />
+              Copy Quote
+            </button>
+          </div>
+        )}
 
         {/* Footer */}
         {article.link && (
