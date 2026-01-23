@@ -80,6 +80,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   useEffect(() => {
     if (!isOpen || !content) return;
 
+    // Detect if device has touch capability
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
     // Desktop: right-click
     const handleContextMenu = (e: MouseEvent) => {
       const selection = window.getSelection();
@@ -106,6 +109,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     // Mobile: detect text selection changes
     const handleSelectionChange = () => {
+      // Only handle on touch devices
+      if (!isTouchDevice) return;
+
       const selection = window.getSelection();
       const text = selection?.toString().trim() || '';
 
@@ -138,8 +144,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }
     };
 
-    // Hide menu when clicking/tapping elsewhere (but not during text selection)
-    const handleClick = (e: Event) => {
+    // Hide menu when clicking/tapping elsewhere
+    const handleClickOutside = (e: Event) => {
       // Don't hide if clicking on the menu itself
       if (showContextMenu && e.target instanceof Node) {
         const menuElement = document.querySelector('[data-context-menu]');
@@ -148,7 +154,13 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         }
       }
 
-      // Small delay to allow selection to be detected first
+      // On desktop, just hide the menu
+      if (!isTouchDevice) {
+        setShowContextMenu(false);
+        return;
+      }
+
+      // On mobile, check if there's still a selection after a small delay
       setTimeout(() => {
         const selection = window.getSelection();
         const text = selection?.toString().trim() || '';
@@ -161,15 +173,17 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     const contentEl = contentRef.current;
     if (contentEl) {
-      // Desktop events
+      // Desktop: right-click context menu
       contentEl.addEventListener('contextmenu', handleContextMenu);
 
-      // Mobile: listen for selection changes
-      document.addEventListener('selectionchange', handleSelectionChange);
+      // Mobile: listen for selection changes (only on touch devices)
+      if (isTouchDevice) {
+        document.addEventListener('selectionchange', handleSelectionChange);
+      }
 
-      // Hide menu
-      document.addEventListener('mousedown', handleClick);
-      document.addEventListener('touchstart', handleClick, { passive: true });
+      // Hide menu when clicking elsewhere
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside, { passive: true });
     }
 
     return () => {
@@ -177,8 +191,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         contentEl.removeEventListener('contextmenu', handleContextMenu);
       }
       document.removeEventListener('selectionchange', handleSelectionChange);
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('touchstart', handleClick);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isOpen, content, showContextMenu]);
 
