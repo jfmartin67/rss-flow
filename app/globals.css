@@ -26,6 +26,39 @@ body {
   }
 }
 
+/* Force all article content text to be dark and readable */
+.article-content,
+.article-content * {
+  color: #111827 !important; /* gray-900 */
+}
+
+/* Links should remain orange */
+.article-content a,
+.article-content a * {
+  color: #f97316 !important; /* orange-500 */
+}
+
+.article-content a:hover,
+.article-content a:hover * {
+  color: #ea580c !important; /* orange-600 */
+}
+
+/* Dark mode text colors */
+.dark .article-content,
+.dark .article-content * {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+.dark .article-content a,
+.dark .article-content a * {
+  color: #f97316 !important; /* orange-500 */
+}
+
+.dark .article-content a:hover,
+.dark .article-content a:hover * {
+  color: #ea580c !important; /* orange-600 */
+}
+
 /* Keep text selection visible when context menu is open */
 .preserve-selection::selection {
   background-color: #3b82f6;

@@ -85,35 +85,46 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     // Detect if device has touch capability
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-    // Helper to create visual highlight
+    // Helper to create visual highlight using overlay
     const createHighlight = (range: Range) => {
       // Remove any existing highlight
       removeHighlight();
 
-      // Create a span to highlight the selection
-      const span = document.createElement('span');
-      span.style.backgroundColor = '#3b82f6';
-      span.style.color = 'white';
-      span.setAttribute('data-selection-highlight', 'true');
+      // Get all rectangles for the selection (handles multi-line selections)
+      const rects = range.getClientRects();
 
-      try {
-        range.surroundContents(span);
-        highlightSpanRef.current = span;
-      } catch (e) {
-        // If surroundContents fails (e.g., range spans multiple elements),
-        // fall back to keeping the browser's native selection
-        console.warn('Could not create highlight:', e);
+      if (rects.length === 0) return;
+
+      // Create a container for all highlight rectangles
+      const container = document.createElement('div');
+      container.setAttribute('data-selection-highlight', 'true');
+      container.style.position = 'fixed';
+      container.style.pointerEvents = 'none';
+      container.style.zIndex = '40';
+
+      // Create a highlight rect for each line
+      for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        const highlightRect = document.createElement('div');
+        highlightRect.style.position = 'absolute';
+        highlightRect.style.backgroundColor = '#3b82f6';
+        highlightRect.style.opacity = '0.3';
+        highlightRect.style.left = `${rect.left}px`;
+        highlightRect.style.top = `${rect.top}px`;
+        highlightRect.style.width = `${rect.width}px`;
+        highlightRect.style.height = `${rect.height}px`;
+        container.appendChild(highlightRect);
       }
+
+      document.body.appendChild(container);
+      highlightSpanRef.current = container as any;
     };
 
     // Helper to remove visual highlight
     const removeHighlight = () => {
-      if (highlightSpanRef.current && highlightSpanRef.current.parentNode) {
-        const parent = highlightSpanRef.current.parentNode;
-        while (highlightSpanRef.current.firstChild) {
-          parent.insertBefore(highlightSpanRef.current.firstChild, highlightSpanRef.current);
-        }
-        parent.removeChild(highlightSpanRef.current);
+      const highlight = document.querySelector('[data-selection-highlight]');
+      if (highlight) {
+        highlight.remove();
         highlightSpanRef.current = null;
       }
     };
@@ -271,18 +282,15 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       await navigator.clipboard.writeText(markdown);
 
       // Remove highlight before clearing
-      if (highlightSpanRef.current && highlightSpanRef.current.parentNode) {
-        const parent = highlightSpanRef.current.parentNode;
-        while (highlightSpanRef.current.firstChild) {
-          parent.insertBefore(highlightSpanRef.current.firstChild, highlightSpanRef.current);
-        }
-        parent.removeChild(highlightSpanRef.current);
-        highlightSpanRef.current = null;
+      const highlight = document.querySelector('[data-selection-highlight]');
+      if (highlight) {
+        highlight.remove();
       }
 
       setShowContextMenu(false);
       setSelectedText('');
       selectionRangeRef.current = null;
+      highlightSpanRef.current = null;
       window.getSelection()?.removeAllRanges();
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
@@ -305,18 +313,15 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     window.open(url, '_blank', 'noopener,noreferrer');
 
     // Remove highlight before clearing
-    if (highlightSpanRef.current && highlightSpanRef.current.parentNode) {
-      const parent = highlightSpanRef.current.parentNode;
-      while (highlightSpanRef.current.firstChild) {
-        parent.insertBefore(highlightSpanRef.current.firstChild, highlightSpanRef.current);
-      }
-      parent.removeChild(highlightSpanRef.current);
-      highlightSpanRef.current = null;
+    const highlight = document.querySelector('[data-selection-highlight]');
+    if (highlight) {
+      highlight.remove();
     }
 
     setShowContextMenu(false);
     setSelectedText('');
     selectionRangeRef.current = null;
+    highlightSpanRef.current = null;
     window.getSelection()?.removeAllRanges();
   };
 
@@ -404,7 +409,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           ) : content ? (
             <div
               ref={contentRef}
-              className={`prose dark:prose-invert max-w-none prose-sm md:prose-base prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-900 dark:prose-p:text-gray-200 prose-a:text-orange-500 hover:prose-a:text-orange-600 select-text cursor-text [&_p]:!text-gray-900 dark:[&_p]:!text-gray-100 [&_div]:!text-gray-900 dark:[&_div]:!text-gray-100 [&_span]:!text-gray-900 dark:[&_span]:!text-gray-100 [&_li]:!text-gray-900 dark:[&_li]:!text-gray-100 ${showContextMenu ? 'preserve-selection' : ''}`}
+              className={`article-content prose dark:prose-invert max-w-none prose-sm md:prose-base select-text cursor-text ${showContextMenu ? 'preserve-selection' : ''}`}
               dangerouslySetInnerHTML={{ __html: content }}
             />
           ) : (
