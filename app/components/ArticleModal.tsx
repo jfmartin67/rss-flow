@@ -79,33 +79,53 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
   // Handle text selection - wait for mouseup to avoid flashing during drag
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !content) return;
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
       // Small delay to ensure selection is finalized
       setTimeout(() => {
         const selection = window.getSelection();
         const text = selection?.toString().trim() || '';
 
-        if (text && contentRef.current?.contains(selection?.anchorNode || null)) {
-          setSelectedText(text);
-          setShowCopyButton(true);
-          setCopied(false);
+        if (text && selection && selection.rangeCount > 0) {
+          // Check if selection is within the content area
+          const anchorNode = selection.anchorNode;
+          const focusNode = selection.focusNode;
 
-          // Position the button near the selection
-          const range = selection?.getRangeAt(0);
-          if (range) {
-            const rect = range.getBoundingClientRect();
-            setButtonPosition({
-              top: rect.bottom + 8,
-              left: rect.left,
-            });
+          const isWithinContent = contentRef.current && (
+            contentRef.current.contains(anchorNode) ||
+            contentRef.current.contains(focusNode)
+          );
+
+          if (isWithinContent) {
+            setSelectedText(text);
+            setCopied(false);
+
+            // Position the button near the selection
+            try {
+              const range = selection.getRangeAt(0);
+              const rect = range.getBoundingClientRect();
+              const modalRect = modalRef.current?.getBoundingClientRect();
+
+              if (modalRect) {
+                setButtonPosition({
+                  top: rect.bottom - modalRect.top + 8,
+                  left: rect.left - modalRect.left,
+                });
+              }
+              setShowCopyButton(true);
+            } catch (error) {
+              console.error('Error positioning button:', error);
+            }
+          } else {
+            setShowCopyButton(false);
+            setSelectedText('');
           }
         } else {
           setShowCopyButton(false);
           setSelectedText('');
         }
-      }, 10);
+      }, 100);
     };
 
     // Hide button when starting a new selection
@@ -114,19 +134,19 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       setCopied(false);
     };
 
+    document.addEventListener('mouseup', handleMouseUp);
     const contentEl = contentRef.current;
     if (contentEl) {
-      contentEl.addEventListener('mouseup', handleMouseUp);
       contentEl.addEventListener('mousedown', handleMouseDown);
     }
 
     return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
       if (contentEl) {
-        contentEl.removeEventListener('mouseup', handleMouseUp);
         contentEl.removeEventListener('mousedown', handleMouseDown);
       }
     };
-  }, [isOpen]);
+  }, [isOpen, content]);
 
   const handleCopyQuote = async () => {
     if (!selectedText) return;
@@ -249,7 +269,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           {/* Copy Quote Button */}
           {showCopyButton && (
             <div
-              className="fixed z-50"
+              className="absolute z-50"
               style={{
                 top: `${buttonPosition.top}px`,
                 left: `${buttonPosition.left}px`,
@@ -257,7 +277,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
             >
               <button
                 onClick={handleCopyQuote}
-                className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                onMouseDown={(e) => e.preventDefault()} // Prevent text deselection
+                className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors text-sm font-medium whitespace-nowrap"
               >
                 {copied ? (
                   <>
