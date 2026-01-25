@@ -1,18 +1,22 @@
-import * as cheerio from 'cheerio';
+import { Readability } from '@mozilla/readability';
+import { JSDOM } from 'jsdom';
 
 /**
- * Extracts the full article content from a URL using a lightweight extraction algorithm.
+ * Extracts the full article content from a URL using Mozilla Readability.
  * This is useful when RSS feeds only provide excerpts.
+ * Uses the same algorithm as Firefox Reader Mode for reliable extraction.
  *
  * @param url - The URL of the article to extract
  * @returns The extracted article content (HTML) or null if extraction fails
  */
 export async function extractFullArticle(url: string): Promise<string | null> {
   try {
+    console.log(`Attempting to extract full article from: ${url}`);
+
     // Fetch the article page
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; RSS-Flow/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
 
@@ -22,52 +26,30 @@ export async function extractFullArticle(url: string): Promise<string | null> {
     }
 
     const html = await response.text();
-    const $ = cheerio.load(html);
 
-    // Remove unwanted elements
-    $('script, style, nav, header, footer, aside, iframe, .ad, .ads, .advertisement, .social-share, .comments').remove();
+    // Create a DOM using jsdom
+    const dom = new JSDOM(html, {
+      url: url, // Important: sets the base URL for relative links
+    });
 
-    // Try to find main content in order of preference
-    let content = $('article').first();
+    // Use Mozilla Readability to parse the article
+    const reader = new Readability(dom.window.document);
+    const article = reader.parse();
 
-    if (content.length === 0) {
-      content = $('main').first();
-    }
-
-    if (content.length === 0) {
-      content = $('[role="main"]').first();
-    }
-
-    if (content.length === 0) {
-      // Find the element with the most paragraph content
-      let maxLength = 0;
-      let bestElement = null;
-
-      $('div').each((_, element) => {
-        const textLength = $(element).find('p').text().length;
-        if (textLength > maxLength) {
-          maxLength = textLength;
-          bestElement = element;
-        }
-      });
-
-      if (bestElement) {
-        content = $(bestElement);
-      }
-    }
-
-    if (content.length === 0) {
+    if (!article || !article.content) {
+      console.log('Readability could not extract article content');
       return null;
     }
 
-    // Clean up the content
-    const extractedHtml = content.html();
-
-    if (!extractedHtml || extractedHtml.length < 100) {
+    // Validate that we got meaningful content
+    if (article.content.length < 100) {
+      console.log('Extracted content too short, likely not article content');
       return null;
     }
 
-    return extractedHtml;
+    console.log(`Successfully extracted article: ${article.title} (${article.content.length} chars)`);
+
+    return article.content;
   } catch (error) {
     console.error(`Error extracting article from ${url}:`, error);
     return null;
