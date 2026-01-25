@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, ExternalLink, Loader2, Copy, Send, Sparkles } from 'lucide-react';
+import { X, ExternalLink, Loader2, Copy, Send, Sparkles, Quote } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
-import { generateSummary } from '@/app/actions/ai';
+import { generateSummary, extractKeyQuotes } from '@/app/actions/ai';
 
 interface ArticleModalProps {
   article: Article;
@@ -26,6 +26,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState(false);
+  const [quotes, setQuotes] = useState<string[] | null>(null);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [quotesError, setQuotesError] = useState(false);
 
   // Handle escape key
   useEffect(() => {
@@ -71,12 +74,40 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     fetchSummary();
   }, [isOpen, content, article.guid, summary, summaryLoading]);
 
-  // Reset summary when modal closes
+  // Fetch key quotes when content is available
+  useEffect(() => {
+    if (!isOpen || !content || quotes !== null || quotesLoading) {
+      return;
+    }
+
+    const fetchQuotes = async () => {
+      setQuotesLoading(true);
+      setQuotesError(false);
+
+      const result = await extractKeyQuotes(content, article.guid);
+
+      if (result.success && result.quotes) {
+        setQuotes(result.quotes);
+      } else {
+        setQuotesError(true);
+        console.log('Quote extraction skipped or failed:', result.error);
+      }
+
+      setQuotesLoading(false);
+    };
+
+    fetchQuotes();
+  }, [isOpen, content, article.guid, quotes, quotesLoading]);
+
+  // Reset summary and quotes when modal closes
   useEffect(() => {
     if (!isOpen) {
       setSummary(null);
       setSummaryError(false);
       setSummaryLoading(false);
+      setQuotes(null);
+      setQuotesError(false);
+      setQuotesLoading(false);
     }
   }, [isOpen]);
 
@@ -445,6 +476,21 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleSendQuoteToMicroblog = (quote: string) => {
+    if (!quote) return;
+
+    // Format quote as markdown with citation at the beginning
+    const lines = quote.split('\n');
+    const quotedLines = lines.map(line => `> ${line}`).join('\n');
+    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}`;
+
+    // URL encode the markdown and open in new tab
+    const encodedMarkdown = encodeURIComponent(markdown);
+    const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -558,6 +604,48 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Key Quotes */}
+              {(quotesLoading || (quotes && quotes.length > 0)) && !quotesError && (
+                <div className="mb-6 space-y-3">
+                  <div className="flex items-center gap-2 px-2">
+                    <Quote className="w-4 h-4 text-blue-500" />
+                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">
+                      Key Quotes
+                    </span>
+                  </div>
+                  {quotesLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 px-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Extracting key quotes...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {quotes?.map((quote, index) => (
+                        <div
+                          key={index}
+                          className="group relative p-3 pl-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        >
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic pr-8">
+                            "{quote}"
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendQuoteToMicroblog(quote);
+                            }}
+                            className="absolute top-3 right-3 p-1.5 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors opacity-0 group-hover:opacity-100"
+                            title="Send quote to microblog"
+                            aria-label="Send quote to microblog"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
