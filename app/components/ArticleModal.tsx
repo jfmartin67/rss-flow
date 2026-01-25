@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, ExternalLink, Loader2, Copy, Send } from 'lucide-react';
+import { X, ExternalLink, Loader2, Copy, Send, Sparkles } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
+import { generateSummary } from '@/app/actions/ai';
 
 interface ArticleModalProps {
   article: Article;
@@ -22,6 +23,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const [selectedText, setSelectedText] = useState('');
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState(false);
 
   // Handle escape key
   useEffect(() => {
@@ -41,6 +45,40 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
+
+  // Fetch AI summary when content is available
+  useEffect(() => {
+    if (!isOpen || !content || summary !== null || summaryLoading) {
+      return;
+    }
+
+    const fetchSummary = async () => {
+      setSummaryLoading(true);
+      setSummaryError(false);
+
+      const result = await generateSummary(content, article.guid);
+
+      if (result.success && result.summary) {
+        setSummary(result.summary);
+      } else {
+        setSummaryError(true);
+        console.log('Summary generation skipped or failed:', result.error);
+      }
+
+      setSummaryLoading(false);
+    };
+
+    fetchSummary();
+  }, [isOpen, content, article.guid, summary, summaryLoading]);
+
+  // Reset summary when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSummary(null);
+      setSummaryError(false);
+      setSummaryLoading(false);
+    }
+  }, [isOpen]);
 
   // Focus trap
   useEffect(() => {
@@ -474,11 +512,38 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
               <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
             </div>
           ) : content ? (
-            <div
-              ref={contentRef}
-              className={`article-content prose dark:prose-invert max-w-none prose-sm md:prose-base select-text cursor-text ${showContextMenu ? 'preserve-selection' : ''}`}
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
+            <>
+              {/* AI Summary */}
+              {(summaryLoading || summary) && !summaryError && (
+                <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 rounded-r-lg">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">
+                        AI Summary
+                      </div>
+                      {summaryLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Generating summary...</span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {summary}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Article Content */}
+              <div
+                ref={contentRef}
+                className={`article-content prose dark:prose-invert max-w-none prose-sm md:prose-base select-text cursor-text ${showContextMenu ? 'preserve-selection' : ''}`}
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            </>
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               No content available
