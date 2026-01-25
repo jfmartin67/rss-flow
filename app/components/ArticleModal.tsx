@@ -18,6 +18,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const contentRef = useRef<HTMLDivElement>(null);
   const selectionRangeRef = useRef<Range | null>(null);
   const highlightSpanRef = useRef<HTMLSpanElement | null>(null);
+  const selectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedText, setSelectedText] = useState('');
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -210,6 +211,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       // Only handle on touch devices
       if (!isTouchDevice) return;
 
+      // Clear any existing timeout
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
+
       const selection = window.getSelection();
       const text = selection?.toString().trim() || '';
 
@@ -230,13 +236,19 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           // Save the selection range
           selectionRangeRef.current = range.cloneRange();
 
-          setSelectedText(text);
-          // Position menu at the end of selection
-          setMenuPosition({
-            x: rect.right,
-            y: rect.bottom + 5
-          });
-          setShowContextMenu(true);
+          // Debounce: wait for selection to stabilize before showing menu
+          selectionTimeoutRef.current = setTimeout(() => {
+            // Create visual highlight for the selection
+            createHighlight(range.cloneRange());
+
+            setSelectedText(text);
+            // Position menu at the end of selection
+            setMenuPosition({
+              x: rect.right,
+              y: rect.bottom + 5
+            });
+            setShowContextMenu(true);
+          }, 500); // Wait 500ms after selection stops changing
         }
       } else {
         // No selection, hide menu
@@ -265,6 +277,12 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }
 
       console.log('handleClickOutside: hiding menu and removing highlight');
+
+      // Clear any pending timeout
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+        selectionTimeoutRef.current = null;
+      }
 
       // On desktop, just hide the menu
       if (!isTouchDevice) {
@@ -307,6 +325,10 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     return () => {
       removeHighlight();
+      // Clear any pending timeout
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
       if (contentEl) {
         contentEl.removeEventListener('mousedown', handleMouseDown);
         contentEl.removeEventListener('contextmenu', handleContextMenu);
@@ -328,6 +350,12 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     try {
       await navigator.clipboard.writeText(markdown);
+
+      // Clear any pending timeout
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+        selectionTimeoutRef.current = null;
+      }
 
       // Remove all highlights before clearing
       const highlights = document.querySelectorAll('[data-selection-highlight]');
@@ -357,6 +385,12 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
 
     window.open(url, '_blank', 'noopener,noreferrer');
+
+    // Clear any pending timeout
+    if (selectionTimeoutRef.current) {
+      clearTimeout(selectionTimeoutRef.current);
+      selectionTimeoutRef.current = null;
+    }
 
     // Remove all highlights before clearing
     const highlights = document.querySelectorAll('[data-selection-highlight]');
