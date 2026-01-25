@@ -73,19 +73,27 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
     const rssContent = item.content || item.summary || '';
     const contentSnippet = item.contentSnippet || '';
 
-    // If RSS provides full content (HTML with reasonable length), use it
-    if (rssContent && rssContent.length > 500) {
-      return rssContent;
-    }
+    // Check if this is likely just an excerpt by looking at the text content length
+    // contentSnippet is the text-only version, so it's a better indicator
+    const isLikelyExcerpt = contentSnippet.length < 1000;
 
-    // If content snippet is very short (likely an excerpt), try to extract full article
-    if (contentSnippet.length < 500 && item.link) {
-      console.log(`RSS content appears to be an excerpt (${contentSnippet.length} chars), attempting full article extraction from ${item.link}`);
+    // If content snippet suggests this is an excerpt, try to extract the full article
+    if (isLikelyExcerpt && item.link) {
+      console.log(`RSS content appears to be an excerpt (${contentSnippet.length} chars text), attempting full article extraction from ${item.link}`);
       const extractedContent = await extractFullArticle(item.link);
 
       if (extractedContent) {
+        console.log(`Successfully extracted full article (${extractedContent.length} chars)`);
         return extractedContent;
+      } else {
+        console.log('Extraction failed, falling back to RSS content');
       }
+    }
+
+    // If we have substantial RSS content (and didn't extract), use it
+    if (rssContent && rssContent.length > 500) {
+      console.log(`Using RSS content (${rssContent.length} chars)`);
+      return rssContent;
     }
 
     // Fallback to whatever RSS provided

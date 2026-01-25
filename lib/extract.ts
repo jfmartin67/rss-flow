@@ -12,21 +12,24 @@ import { parseHTML } from 'linkedom';
  */
 export async function extractFullArticle(url: string): Promise<string | null> {
   try {
-    console.log(`Attempting to extract full article from: ${url}`);
+    console.log(`[Extract] Attempting to extract full article from: ${url}`);
 
     // Fetch the article page
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
       },
     });
 
     if (!response.ok) {
-      console.error(`Failed to fetch article: ${response.status}`);
+      console.error(`[Extract] Failed to fetch article: ${response.status} ${response.statusText}`);
       return null;
     }
 
     const html = await response.text();
+    console.log(`[Extract] Fetched HTML (${html.length} chars)`);
 
     // Create a DOM using linkedom (lightweight, serverless-friendly)
     const { document } = parseHTML(html);
@@ -38,25 +41,29 @@ export async function extractFullArticle(url: string): Promise<string | null> {
     });
 
     // Use Mozilla Readability to parse the article
-    const reader = new Readability(document);
+    const reader = new Readability(document, {
+      debug: false,
+      charThreshold: 500, // Minimum character count
+    });
     const article = reader.parse();
 
     if (!article || !article.content) {
-      console.log('Readability could not extract article content');
+      console.warn(`[Extract] Readability could not extract article content from ${url}`);
       return null;
     }
 
     // Validate that we got meaningful content
-    if (article.content.length < 100) {
-      console.log('Extracted content too short, likely not article content');
+    if (article.content.length < 200) {
+      console.warn(`[Extract] Extracted content too short (${article.content.length} chars), likely not article content`);
       return null;
     }
 
-    console.log(`Successfully extracted article: ${article.title} (${article.content.length} chars)`);
+    const textLength = article.textContent?.length || 0;
+    console.log(`[Extract] Successfully extracted article: "${article.title}" (${article.content.length} chars HTML, ${textLength} chars text)`);
 
     return article.content;
   } catch (error) {
-    console.error(`Error extracting article from ${url}:`, error);
+    console.error(`[Extract] Error extracting article from ${url}:`, error);
     return null;
   }
 }
