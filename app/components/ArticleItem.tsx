@@ -81,8 +81,8 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
               <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
                 {formatRelativeTime(article.pubDate)}
               </span>
-              <span className="text-gray-400 dark:text-gray-600 flex-shrink-0">·</span>
-              <span className="text-xs text-gray-500 dark:text-gray-500 truncate font-bold">
+              <span className="text-gray-400 dark:text-gray-600 flex-shrink-0 max-md:hidden">·</span>
+              <span className="text-xs text-gray-500 dark:text-gray-500 truncate font-bold max-md:hidden">
                 {article.feedName}
               </span>
             </div>

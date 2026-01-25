@@ -410,8 +410,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
               <span className="text-xs text-gray-600 dark:text-gray-400">
                 {formatRelativeTime(article.pubDate)}
               </span>
-              <span className="text-gray-400 dark:text-gray-600">·</span>
-              <span className="text-xs text-gray-500 dark:text-gray-500 font-bold">
+              <span className="text-gray-400 dark:text-gray-600 max-md:hidden">·</span>
+              <span className="text-xs text-gray-500 dark:text-gray-500 font-bold max-md:hidden">
                 {article.feedName}
               </span>
             </div>
