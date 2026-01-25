@@ -79,20 +79,15 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
 
     // If content snippet suggests this is an excerpt, try to extract the full article
     if (isLikelyExcerpt && item.link) {
-      console.log(`RSS content appears to be an excerpt (${contentSnippet.length} chars text), attempting full article extraction from ${item.link}`);
       const extractedContent = await extractFullArticle(item.link);
 
       if (extractedContent) {
-        console.log(`Successfully extracted full article (${extractedContent.length} chars)`);
         return extractedContent;
-      } else {
-        console.log('Extraction failed, falling back to RSS content');
       }
     }
 
     // If we have substantial RSS content (and didn't extract), use it
     if (rssContent && rssContent.length > 500) {
-      console.log(`Using RSS content (${rssContent.length} chars)`);
       return rssContent;
     }
 

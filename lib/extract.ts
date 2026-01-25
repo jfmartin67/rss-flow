@@ -12,8 +12,6 @@ import { parseHTML } from 'linkedom';
  */
 export async function extractFullArticle(url: string): Promise<string | null> {
   try {
-    console.log(`[Extract] Attempting to extract full article from: ${url}`);
-
     // Fetch the article page
     const response = await fetch(url, {
       headers: {
@@ -24,12 +22,10 @@ export async function extractFullArticle(url: string): Promise<string | null> {
     });
 
     if (!response.ok) {
-      console.error(`[Extract] Failed to fetch article: ${response.status} ${response.statusText}`);
       return null;
     }
 
     const html = await response.text();
-    console.log(`[Extract] Fetched HTML (${html.length} chars)`);
 
     // Create a DOM using linkedom (lightweight, serverless-friendly)
     const { document } = parseHTML(html);
@@ -48,22 +44,17 @@ export async function extractFullArticle(url: string): Promise<string | null> {
     const article = reader.parse();
 
     if (!article || !article.content) {
-      console.warn(`[Extract] Readability could not extract article content from ${url}`);
       return null;
     }
 
     // Validate that we got meaningful content
     if (article.content.length < 200) {
-      console.warn(`[Extract] Extracted content too short (${article.content.length} chars), likely not article content`);
       return null;
     }
 
-    const textLength = article.textContent?.length || 0;
-    console.log(`[Extract] Successfully extracted article: "${article.title}" (${article.content.length} chars HTML, ${textLength} chars text)`);
-
     return article.content;
   } catch (error) {
-    console.error(`[Extract] Error extracting article from ${url}:`, error);
+    console.error(`Error extracting article from ${url}:`, error);
     return null;
   }
 }
