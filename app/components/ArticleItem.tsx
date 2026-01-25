@@ -68,7 +68,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2">
             {/* Fixed width metadata section */}
-            <div className="flex items-center gap-2 w-64 flex-shrink-0">
+            <div className="flex items-center gap-2 md:w-64 flex-shrink-0">
               <span
                 className="px-3 py-1 rounded-full text-xs font-bold flex-shrink-0"
                 style={{
@@ -107,7 +107,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
           {contentLines > 0 && article.content && article.title?.trim() && (
             <div className="flex items-start gap-2 mt-1">
               {/* Spacer to align with metadata section */}
-              <div className="w-64 flex-shrink-0" />
+              <div className="md:w-64 flex-shrink-0" />
               {/* Content preview aligned with title */}
               <div className="flex items-start gap-2 flex-1 min-w-0">
                 {/* Spacer for read button alignment */}
