@@ -40,7 +40,6 @@ export async function generateSummary(content: string, articleGuid: string): Pro
     const { text } = await generateText({
       model: anthropic('claude-3-5-haiku-20241022'), // Fast and cost-effective
       prompt: `Summarize the following article in 2-3 concise sentences. Focus on the main points and key takeaways:\n\n${truncatedContent}`,
-      maxTokens: 150, // Keep summaries short
     });
 
     // Cache for 90 days
