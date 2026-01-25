@@ -21,6 +21,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [contentLines, setContentLines] = useState<ContentLines>(0);
   const [isPending, startTransition] = useTransition();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const { theme, toggleTheme } = useTheme();
 
   const handleTimeRangeChange = async (range: TimeRange) => {
@@ -43,7 +44,28 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     startTransition(async () => {
       const newArticles = await fetchAllArticles(timeRange);
       setArticles(newArticles);
+      setLastRefreshTime(new Date());
     });
+  };
+
+  const formatRefreshTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    // Show time for today, or date for older
+    const today = now.toDateString() === date.toDateString();
+    if (today) {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   };
 
   return (
@@ -147,6 +169,12 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                 <Settings size={18} />
               </a>
             </div>
+          </div>
+          {/* Last Updated Timestamp */}
+          <div className="mt-2 text-center">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Last updated: {formatRefreshTime(lastRefreshTime)}
+            </span>
           </div>
         </div>
       </header>
