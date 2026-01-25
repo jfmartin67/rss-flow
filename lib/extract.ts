@@ -1,10 +1,11 @@
 import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
+import { parseHTML } from 'linkedom';
 
 /**
  * Extracts the full article content from a URL using Mozilla Readability.
  * This is useful when RSS feeds only provide excerpts.
  * Uses the same algorithm as Firefox Reader Mode for reliable extraction.
+ * Uses linkedom (lightweight DOM) for serverless compatibility.
  *
  * @param url - The URL of the article to extract
  * @returns The extracted article content (HTML) or null if extraction fails
@@ -27,13 +28,17 @@ export async function extractFullArticle(url: string): Promise<string | null> {
 
     const html = await response.text();
 
-    // Create a DOM using jsdom
-    const dom = new JSDOM(html, {
-      url: url, // Important: sets the base URL for relative links
+    // Create a DOM using linkedom (lightweight, serverless-friendly)
+    const { document } = parseHTML(html);
+
+    // Set the document's baseURI for relative links
+    Object.defineProperty(document, 'documentURI', {
+      value: url,
+      writable: false,
     });
 
     // Use Mozilla Readability to parse the article
-    const reader = new Readability(dom.window.document);
+    const reader = new Readability(document);
     const article = reader.parse();
 
     if (!article || !article.content) {
