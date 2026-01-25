@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
@@ -22,7 +22,17 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [isPending, startTransition] = useTransition();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
+  const [, setCurrentTime] = useState<Date>(new Date());
   const { theme, toggleTheme } = useTheme();
+
+  // Update the current time every minute to refresh the "last updated" display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleTimeRangeChange = async (range: TimeRange) => {
     setTimeRange(range);
