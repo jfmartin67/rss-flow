@@ -206,38 +206,33 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       }
     };
 
-    // Mobile: detect text selection changes
-    const handleSelectionChange = () => {
+    // Mobile: handle touch end to show menu after selection gesture completes
+    const handleTouchEnd = () => {
       // Only handle on touch devices
       if (!isTouchDevice) return;
 
-      // Clear any existing timeout
-      if (selectionTimeoutRef.current) {
-        clearTimeout(selectionTimeoutRef.current);
-      }
+      // Use a small delay to ensure selection is finalized
+      selectionTimeoutRef.current = setTimeout(() => {
+        const selection = window.getSelection();
+        const text = selection?.toString().trim() || '';
 
-      const selection = window.getSelection();
-      const text = selection?.toString().trim() || '';
+        if (text && selection && selection.rangeCount > 0) {
+          const anchorNode = selection.anchorNode;
+          const focusNode = selection.focusNode;
 
-      if (text && selection && selection.rangeCount > 0) {
-        const anchorNode = selection.anchorNode;
-        const focusNode = selection.focusNode;
+          const isWithinContent = contentRef.current && (
+            contentRef.current.contains(anchorNode) ||
+            contentRef.current.contains(focusNode)
+          );
 
-        const isWithinContent = contentRef.current && (
-          contentRef.current.contains(anchorNode) ||
-          contentRef.current.contains(focusNode)
-        );
+          if (isWithinContent) {
+            // Get the bounding rect of the selection to position menu
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
 
-        if (isWithinContent) {
-          // Get the bounding rect of the selection to position menu
-          const range = selection.getRangeAt(0);
-          const rect = range.getBoundingClientRect();
+            // Save the selection range
+            selectionRangeRef.current = range.cloneRange();
 
-          // Save the selection range
-          selectionRangeRef.current = range.cloneRange();
-
-          // Debounce: wait for selection to stabilize before showing menu
-          selectionTimeoutRef.current = setTimeout(() => {
             // Create visual highlight for the selection
             createHighlight(range.cloneRange());
 
@@ -248,15 +243,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
               y: rect.bottom + 5
             });
             setShowContextMenu(true);
-          }, 500); // Wait 500ms after selection stops changing
+          }
         }
-      } else {
-        // No selection, hide menu
-        setShowContextMenu(false);
-        setSelectedText('');
-        selectionRangeRef.current = null;
-        removeHighlight();
-      }
+      }, 100); // Small delay to ensure selection is finalized
     };
 
     // Hide menu when clicking/tapping elsewhere
@@ -313,9 +302,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       // Desktop: right-click context menu
       contentEl.addEventListener('contextmenu', handleContextMenu);
 
-      // Mobile: listen for selection changes (only on touch devices)
+      // Mobile: listen for touch end to show menu after selection (only on touch devices)
       if (isTouchDevice) {
-        document.addEventListener('selectionchange', handleSelectionChange);
+        contentEl.addEventListener('touchend', handleTouchEnd);
       }
 
       // Hide menu when clicking elsewhere
@@ -332,8 +321,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       if (contentEl) {
         contentEl.removeEventListener('mousedown', handleMouseDown);
         contentEl.removeEventListener('contextmenu', handleContextMenu);
+        contentEl.removeEventListener('touchend', handleTouchEnd);
       }
-      document.removeEventListener('selectionchange', handleSelectionChange);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
