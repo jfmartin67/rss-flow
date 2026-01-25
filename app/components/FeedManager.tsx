@@ -30,8 +30,20 @@ const DEFAULT_COLORS = [
   '#ec4899', // pink
 ];
 
+// Sort feeds by category alphabetically
+const sortFeedsByCategory = (feedsToSort: Feed[]): Feed[] => {
+  return [...feedsToSort].sort((a, b) => {
+    const categoryA = a.category.toLowerCase();
+    const categoryB = b.category.toLowerCase();
+    if (categoryA < categoryB) return -1;
+    if (categoryA > categoryB) return 1;
+    // If categories are the same, sort by name
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  });
+};
+
 export default function FeedManager({ initialFeeds }: FeedManagerProps) {
-  const [feeds, setFeeds] = useState(initialFeeds);
+  const [feeds, setFeeds] = useState(sortFeedsByCategory(initialFeeds));
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
   const [color, setColor] = useState(DEFAULT_COLORS[0]);
@@ -95,11 +107,13 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
       });
 
       if (result.success) {
-        setFeeds(feeds.map(feed =>
+        const updatedFeeds = feeds.map(feed =>
           feed.id === id
             ? { ...feed, name: editName.trim(), category: editCategory.trim(), color: editColor }
             : feed
-        ));
+        );
+        // Re-sort feeds after update
+        setFeeds(sortFeedsByCategory(updatedFeeds));
         setEditingId(null);
         setEditName('');
         setEditCategory('');

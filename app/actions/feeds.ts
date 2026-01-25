@@ -65,5 +65,14 @@ export async function deleteFeed(id: string): Promise<{ success: boolean; error?
 }
 
 export async function getAllFeeds(): Promise<Feed[]> {
-  return await getFeeds();
+  const feeds = await getFeeds();
+  // Sort feeds by category alphabetically, then by name
+  return feeds.sort((a, b) => {
+    const categoryA = a.category.toLowerCase();
+    const categoryB = b.category.toLowerCase();
+    if (categoryA < categoryB) return -1;
+    if (categoryA > categoryB) return 1;
+    // If categories are the same, sort by name
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  });
 }
