@@ -430,6 +430,21 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     window.getSelection()?.removeAllRanges();
   };
 
+  const handleSendSummaryToMicroblog = () => {
+    if (!summary) return;
+
+    // Format summary as markdown with citation at the beginning
+    const lines = summary.split('\n');
+    const quotedLines = lines.map(line => `> ${line}`).join('\n');
+    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}`;
+
+    // URL encode the markdown and open in new tab
+    const encodedMarkdown = encodeURIComponent(markdown);
+    const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -515,12 +530,21 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
             <>
               {/* AI Summary */}
               {(summaryLoading || summary) && !summaryError && (
-                <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 rounded-r-lg">
+                <div
+                  className={`mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 rounded-r-lg ${summary ? 'cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors' : ''}`}
+                  onClick={summary ? handleSendSummaryToMicroblog : undefined}
+                  title={summary ? "Click to send summary to microblog" : undefined}
+                >
                   <div className="flex items-start gap-2">
                     <Sparkles className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">
-                        AI Summary
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">
+                          AI Summary
+                        </span>
+                        {summary && (
+                          <Send className="w-3.5 h-3.5 text-orange-500 opacity-60" />
+                        )}
                       </div>
                       {summaryLoading ? (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
