@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
@@ -24,6 +24,8 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [, setCurrentTime] = useState<Date>(new Date());
   const { theme, toggleTheme } = useTheme();
+  const articlesContainerRef = useRef<HTMLDivElement>(null);
+  const previousArticleCountRef = useRef(initialArticles.length);
 
   // Update the current time every minute to refresh the "last updated" display
   useEffect(() => {
@@ -33,6 +35,41 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
 
     return () => clearInterval(interval);
   }, []);
+
+  // Smooth scroll animation when new articles are added
+  useEffect(() => {
+    const container = articlesContainerRef.current;
+    if (!container) return;
+
+    const newArticleCount = articles.length;
+    const previousCount = previousArticleCountRef.current;
+
+    // Only animate if we have new articles (more than before)
+    if (newArticleCount > previousCount && previousCount > 0) {
+      // Wait for DOM to update
+      requestAnimationFrame(() => {
+        const firstArticle = container.firstElementChild as HTMLElement;
+        if (firstArticle) {
+          // Calculate the height of new content
+          const newArticlesCount = newArticleCount - previousCount;
+          let totalHeight = 0;
+
+          for (let i = 0; i < Math.min(newArticlesCount, container.children.length); i++) {
+            const child = container.children[i] as HTMLElement;
+            totalHeight += child.offsetHeight;
+          }
+
+          // Smoothly scroll down to reveal new content
+          window.scrollTo({
+            top: window.scrollY + totalHeight,
+            behavior: 'smooth'
+          });
+        }
+      });
+    }
+
+    previousArticleCountRef.current = newArticleCount;
+  }, [articles]);
 
   const handleTimeRangeChange = async (range: TimeRange) => {
     setTimeRange(range);
@@ -290,7 +327,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
             </p>
           </div>
         ) : (
-          <div>
+          <div ref={articlesContainerRef}>
             {articles.map((article) => (
               <ArticleItem
                 key={article.guid}
