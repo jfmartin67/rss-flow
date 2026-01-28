@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
 import { fetchAllArticles } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 
@@ -23,6 +23,8 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [, setCurrentTime] = useState<Date>(new Date());
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const { theme, toggleTheme } = useTheme();
   const articlesContainerRef = useRef<HTMLDivElement>(null);
   const previousArticleCountRef = useRef(initialArticles.length);
@@ -115,6 +117,38 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   };
 
+  // Extract unique categories from articles
+  const getUniqueCategories = (): { category: string; color: string }[] => {
+    const categoryMap = new Map<string, string>();
+    articles.forEach(article => {
+      if (article.category && !categoryMap.has(article.category)) {
+        categoryMap.set(article.category, article.categoryColor);
+      }
+    });
+    return Array.from(categoryMap.entries()).map(([category, color]) => ({ category, color }));
+  };
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  const handleClearCategories = () => {
+    setSelectedCategories(new Set());
+  };
+
+  // Filter articles by selected categories
+  const filteredArticles = selectedCategories.size === 0
+    ? articles
+    : articles.filter(article => selectedCategories.has(article.category));
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <header className="sticky top-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
@@ -194,6 +228,17 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
 
             <div className="hidden md:flex gap-2 flex-shrink-0">
               <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`p-2 rounded transition-colors ${
+                  isFilterOpen || selectedCategories.size > 0
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                title="Filter by Category"
+              >
+                <Filter size={18} />
+              </button>
+              <button
                 onClick={handleRefresh}
                 disabled={isPending}
                 className="p-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
@@ -225,6 +270,49 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
           </div>
         </div>
       </header>
+
+      {/* Collapsible Filter Section - Desktop only */}
+      {isFilterOpen && (
+        <div className="hidden md:block w-full bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="w-full px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Filter by Category
+              </h3>
+              {selectedCategories.size > 0 && (
+                <button
+                  onClick={handleClearCategories}
+                  className="text-xs text-orange-500 hover:text-orange-600 font-medium"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {getUniqueCategories().map(({ category, color }) => (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryToggle(category)}
+                  className={`
+                    px-3 py-1.5 rounded-full text-xs font-bold transition-all
+                    ${selectedCategories.has(category)
+                      ? 'text-white shadow-md'
+                      : 'border-2'
+                    }
+                  `}
+                  style={{
+                    backgroundColor: selectedCategories.has(category) ? color : 'transparent',
+                    borderColor: color,
+                    color: selectedCategories.has(category) ? 'white' : color,
+                  }}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hamburger Menu */}
       <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
@@ -283,6 +371,45 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
             </div>
           </div>
 
+          {/* Category Filter Section - Landscape only */}
+          <div className="landscape-only">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Filter by Category
+              </h3>
+              {selectedCategories.size > 0 && (
+                <button
+                  onClick={handleClearCategories}
+                  className="text-xs text-orange-500 hover:text-orange-600 font-medium"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {getUniqueCategories().map(({ category, color }) => (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryToggle(category)}
+                  className={`
+                    px-3 py-2 rounded-lg text-sm font-bold transition-all
+                    ${selectedCategories.has(category)
+                      ? 'text-white'
+                      : 'border-2'
+                    }
+                  `}
+                  style={{
+                    backgroundColor: selectedCategories.has(category) ? color : 'transparent',
+                    borderColor: color,
+                    color: selectedCategories.has(category) ? 'white' : color,
+                  }}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Actions Section */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -326,9 +453,15 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               No articles found. Add some feeds in the <a href="/admin" className="text-orange-500 hover:underline">admin panel</a>.
             </p>
           </div>
+        ) : filteredArticles.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">
+              No articles match the selected categories.
+            </p>
+          </div>
         ) : (
           <div ref={articlesContainerRef}>
-            {articles.map((article) => (
+            {filteredArticles.map((article) => (
               <ArticleItem
                 key={article.guid}
                 article={article}

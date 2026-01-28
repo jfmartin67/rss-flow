@@ -95,3 +95,14 @@ body {
   background-color: #3b82f6 !important;
   color: white !important;
 }
+
+/* Show landscape-only content only on mobile in landscape orientation */
+.landscape-only {
+  display: none;
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .landscape-only {
+    display: block;
+  }
+}
