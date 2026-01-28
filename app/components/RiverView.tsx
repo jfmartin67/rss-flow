@@ -226,7 +226,10 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               <Menu size={18} />
             </button>
 
-            <div className="hidden md:flex gap-2 flex-shrink-0">
+            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+                Last updated: {formatRefreshTime(lastRefreshTime)}
+              </span>
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`p-2 rounded transition-colors ${
@@ -261,12 +264,6 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                 <Settings size={18} />
               </a>
             </div>
-          </div>
-          {/* Last Updated Timestamp */}
-          <div className="mt-2 text-center">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Last updated: {formatRefreshTime(lastRefreshTime)}
-            </span>
           </div>
         </div>
       </header>
