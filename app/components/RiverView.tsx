@@ -149,6 +149,29 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     ? articles
     : articles.filter(article => selectedCategories.has(article.category));
 
+  // Calculate feed velocities to identify low-velocity feeds
+  const getFeedVelocities = (): Map<string, number> => {
+    const feedCounts = new Map<string, number>();
+    articles.forEach(article => {
+      feedCounts.set(article.feedUrl, (feedCounts.get(article.feedUrl) || 0) + 1);
+    });
+    return feedCounts;
+  };
+
+  const isLowVelocityFeed = (feedUrl: string): boolean => {
+    const velocities = getFeedVelocities();
+    const count = velocities.get(feedUrl) || 0;
+
+    // Define thresholds based on time range
+    const thresholds = {
+      '24h': 1,
+      '3d': 2,
+      '7d': 3,
+    };
+
+    return count <= thresholds[timeRange];
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <header className="sticky top-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
@@ -465,6 +488,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                 isRead={readGuids.has(article.guid)}
                 contentLines={contentLines}
                 onRead={handleMarkAsRead}
+                isLowVelocity={isLowVelocityFeed(article.feedUrl)}
               />
             ))}
           </div>

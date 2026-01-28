@@ -12,9 +12,10 @@ interface ArticleItemProps {
   isRead: boolean;
   contentLines: ContentLines;
   onRead: (guid: string) => void;
+  isLowVelocity?: boolean;
 }
 
-export default function ArticleItem({ article, isRead, contentLines, onRead }: ArticleItemProps) {
+export default function ArticleItem({ article, isRead, contentLines, onRead, isLowVelocity = false }: ArticleItemProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
@@ -57,7 +58,9 @@ export default function ArticleItem({ article, isRead, contentLines, onRead }: A
   return (
     <article
       onClick={handleClick}
-      className="py-0.5 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-200 dark:border-gray-800"
+      className={`py-0.5 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-200 dark:border-gray-800 ${
+        isLowVelocity ? 'border-l-4 border-l-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : ''
+      }`}
     >
       <div className="flex items-start gap-2">
         <div
