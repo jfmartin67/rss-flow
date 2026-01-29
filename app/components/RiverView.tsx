@@ -4,8 +4,8 @@ import { useState, useTransition, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
-import { fetchAllArticles } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { fetchAllArticles, markAllAsRead } from '@/app/actions/articles';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 
@@ -172,6 +172,28 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     return count <= thresholds[timeRange];
   };
 
+  // Calculate unread count for filtered articles
+  const unreadCount = filteredArticles.filter(article => !readGuids.has(article.guid)).length;
+
+  // Mark all visible articles as read
+  const handleMarkAllAsRead = async () => {
+    const unreadGuids = filteredArticles
+      .filter(article => !readGuids.has(article.guid))
+      .map(article => article.guid);
+
+    if (unreadGuids.length === 0) return;
+
+    // Optimistically update UI
+    setReadGuids(prev => {
+      const newSet = new Set(prev);
+      unreadGuids.forEach(guid => newSet.add(guid));
+      return newSet;
+    });
+
+    // Persist to database
+    await markAllAsRead(unreadGuids);
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <header className="sticky top-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
@@ -185,9 +207,16 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                 height={40}
                 className="rounded-full"
               />
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 font-[family-name:var(--font-red-hat-display)]">
-                RSS Flow
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 font-[family-name:var(--font-red-hat-display)]">
+                  RSS Flow
+                </h1>
+                {unreadCount > 0 && (
+                  <span className="flex items-center justify-center min-w-[24px] h-6 px-2 bg-red-500 text-white text-xs font-bold rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="hidden md:flex items-center gap-4 flex-1 justify-center">
@@ -263,6 +292,14 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
                 title="Filter by Category"
               >
                 <Filter size={18} />
+              </button>
+              <button
+                onClick={handleMarkAllAsRead}
+                disabled={unreadCount === 0}
+                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                title="Mark All as Read"
+              >
+                <CheckCheck size={18} />
               </button>
               <button
                 onClick={handleRefresh}
@@ -436,6 +473,17 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               Actions
             </h3>
             <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  handleMarkAllAsRead();
+                  setIsMenuOpen(false);
+                }}
+                disabled={unreadCount === 0}
+                className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <CheckCheck size={18} />
+                Mark All as Read
+              </button>
               <button
                 onClick={() => {
                   handleRefresh();

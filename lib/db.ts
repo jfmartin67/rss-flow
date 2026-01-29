@@ -73,6 +73,16 @@ export async function markArticleAsRead(guid: string): Promise<void> {
   }
 }
 
+export async function markMultipleArticlesAsRead(guids: string[]): Promise<void> {
+  try {
+    if (guids.length === 0) return;
+    await redis.sadd(READ_ARTICLES_KEY, ...guids);
+  } catch (error) {
+    console.error('Error marking articles as read:', error);
+    throw new Error('Failed to mark articles as read');
+  }
+}
+
 export async function getReadArticles(): Promise<Set<string>> {
   try {
     const readGuids = await redis.smembers(READ_ARTICLES_KEY);

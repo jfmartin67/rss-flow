@@ -1,7 +1,7 @@
 'use server';
 
 import { Article, TimeRange } from '@/types';
-import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead } from '@/lib/db';
+import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead, markMultipleArticlesAsRead as dbMarkMultipleAsRead } from '@/lib/db';
 import { fetchAllFeeds, fetchArticleContent as rssFetchArticleContent } from '@/lib/rss';
 import { filterByTimeRange, interleaveArticles } from '@/lib/utils';
 
@@ -34,6 +34,16 @@ export async function markAsRead(guid: string): Promise<{ success: boolean }> {
     return { success: true };
   } catch (error) {
     console.error('Error marking article as read:', error);
+    return { success: false };
+  }
+}
+
+export async function markAllAsRead(guids: string[]): Promise<{ success: boolean }> {
+  try {
+    await dbMarkMultipleAsRead(guids);
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking all articles as read:', error);
     return { success: false };
   }
 }
