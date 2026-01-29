@@ -3,13 +3,12 @@
 import { useState, useTransition } from 'react';
 import { Feed } from '@/types';
 import { addFeed, updateFeed, deleteFeed } from '@/app/actions/feeds';
-import { type FeedStats } from '@/app/actions/articles';
-import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, ChevronUp, TrendingUp, Eye, Calendar, Activity } from 'lucide-react';
+import { getFeedStatistics, type FeedStats } from '@/app/actions/articles';
+import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
 interface FeedManagerProps {
   initialFeeds: Feed[];
-  feedStats: Map<string, FeedStats>;
 }
 
 const DEFAULT_COLORS = [
@@ -44,7 +43,7 @@ const sortFeedsByCategory = (feedsToSort: Feed[]): Feed[] => {
   });
 };
 
-export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProps) {
+export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [feeds, setFeeds] = useState(sortFeedsByCategory(initialFeeds));
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
@@ -57,6 +56,8 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
   const [editCategory, setEditCategory] = useState('');
   const [editColor, setEditColor] = useState('');
   const [expandedStats, setExpandedStats] = useState<Set<string>>(new Set());
+  const [feedStats, setFeedStats] = useState<Map<string, FeedStats>>(new Map());
+  const [loadingStats, setLoadingStats] = useState<Set<string>>(new Set());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +144,9 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
     });
   };
 
-  const toggleStats = (feedId: string) => {
+  const toggleStats = async (feedId: string, feedUrl: string) => {
+    const isExpanding = !expandedStats.has(feedId);
+
     setExpandedStats(prev => {
       const newSet = new Set(prev);
       if (newSet.has(feedId)) {
@@ -153,6 +156,23 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
       }
       return newSet;
     });
+
+    // Fetch stats if expanding and not already loaded
+    if (isExpanding && !feedStats.has(feedUrl)) {
+      setLoadingStats(prev => new Set(prev).add(feedUrl));
+      try {
+        const stats = await getFeedStatistics(feedUrl);
+        setFeedStats(prev => new Map(prev).set(feedUrl, stats));
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      } finally {
+        setLoadingStats(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(feedUrl);
+          return newSet;
+        });
+      }
+    }
   };
 
   const formatDate = (date: Date | null) => {
@@ -376,13 +396,17 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
                       ) : (
                         <>
                           <button
-                            onClick={() => toggleStats(feed.id)}
+                            onClick={() => toggleStats(feed.id, feed.url)}
                             className="p-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                             title="Statistics"
                           >
-                            <div className={`transition-transform duration-300 ${isStatsExpanded ? 'rotate-180' : 'rotate-0'}`}>
-                              <ChevronDown size={16} />
-                            </div>
+                            {loadingStats.has(feed.url) ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <div className={`transition-transform duration-300 ${isStatsExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                                <ChevronDown size={16} />
+                              </div>
+                            )}
                           </button>
                           <button
                             onClick={() => handleEdit(feed)}
@@ -411,11 +435,23 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
                       isStatsExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                     }`}
                   >
-                    {stats && (
-                      <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                          Statistics (Last 7 Days)
-                        </h4>
+                    <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Statistics (Last 7 Days)
+                      </h4>
+                      {loadingStats.has(feed.url) ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {[...Array(4)].map((_, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-0.5" />
+                              <div className="flex-1 space-y-2">
+                                <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : stats ? (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div
                             className={`flex items-start gap-2 transition-all duration-300 delay-75 ${
@@ -471,8 +507,12 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                          Click to view statistics
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
