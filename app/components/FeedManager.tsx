@@ -3,11 +3,13 @@
 import { useState, useTransition } from 'react';
 import { Feed } from '@/types';
 import { addFeed, updateFeed, deleteFeed } from '@/app/actions/feeds';
-import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X } from 'lucide-react';
+import { type FeedStats } from '@/app/actions/articles';
+import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, ChevronUp, TrendingUp, Eye, Calendar, Activity } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
 interface FeedManagerProps {
   initialFeeds: Feed[];
+  feedStats: Map<string, FeedStats>;
 }
 
 const DEFAULT_COLORS = [
@@ -42,7 +44,7 @@ const sortFeedsByCategory = (feedsToSort: Feed[]): Feed[] => {
   });
 };
 
-export default function FeedManager({ initialFeeds }: FeedManagerProps) {
+export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProps) {
   const [feeds, setFeeds] = useState(sortFeedsByCategory(initialFeeds));
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
@@ -54,6 +56,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [expandedStats, setExpandedStats] = useState<Set<string>>(new Set());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +141,31 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
         setError(result.error || 'Failed to delete feed');
       }
     });
+  };
+
+  const toggleStats = (feedId: string) => {
+    setExpandedStats(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(feedId)) {
+        newSet.delete(feedId);
+      } else {
+        newSet.add(feedId);
+      }
+      return newSet;
+    });
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return 'Never';
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -250,18 +278,23 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
           </p>
         ) : (
           <div className="space-y-2">
-            {feeds.map((feed) => (
-              <div
-                key={feed.id}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div
-                    className="w-4 h-4 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: feed.color }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    {editingId === feed.id ? (
+            {feeds.map((feed) => {
+              const stats = feedStats.get(feed.url);
+              const isStatsExpanded = expandedStats.has(feed.id);
+
+              return (
+                <div
+                  key={feed.id}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                >
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div
+                        className="w-4 h-4 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: feed.color }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        {editingId === feed.id ? (
                       <div className="space-y-2">
                         <input
                           type="text"
@@ -320,49 +353,106 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                     </span>
                   )}
                 </div>
-                <div className="ml-4 flex gap-2">
-                  {editingId === feed.id ? (
-                    <>
-                      <button
-                        onClick={() => handleSaveEdit(feed.id)}
-                        disabled={isPending}
-                        className="p-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 transition-colors"
-                        title="Save"
-                      >
-                        <Check size={16} />
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        disabled={isPending}
-                        className="p-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
-                        title="Cancel"
-                      >
-                        <X size={16} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleEdit(feed)}
-                        disabled={isPending}
-                        className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(feed.id)}
-                        disabled={isPending}
-                        className="p-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </>
+                    <div className="ml-4 flex gap-2">
+                      {editingId === feed.id ? (
+                        <>
+                          <button
+                            onClick={() => handleSaveEdit(feed.id)}
+                            disabled={isPending}
+                            className="p-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 transition-colors"
+                            title="Save"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            disabled={isPending}
+                            className="p-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                            title="Cancel"
+                          >
+                            <X size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => toggleStats(feed.id)}
+                            className="p-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                            title="Statistics"
+                          >
+                            {isStatsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                          <button
+                            onClick={() => handleEdit(feed)}
+                            disabled={isPending}
+                            className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(feed.id)}
+                            disabled={isPending}
+                            className="p-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Statistics Section */}
+                  {isStatsExpanded && stats && (
+                    <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Statistics (Last 7 Days)
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-start gap-2">
+                          <TrendingUp size={16} className="text-blue-500 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Total Articles</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.totalArticles}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Eye size={16} className="text-green-500 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Read Rate</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                              {stats.readRate.toFixed(0)}%
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500">
+                              {stats.readArticles}/{stats.totalArticles}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Calendar size={16} className="text-orange-500 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Last Article</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {formatDate(stats.lastArticleDate)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Activity size={16} className="text-purple-500 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Per Day</p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                              {stats.articlesPerDay.toFixed(1)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

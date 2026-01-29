@@ -70,3 +70,58 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
     };
   }
 }
+
+export interface FeedStats {
+  feedUrl: string;
+  totalArticles: number;
+  readArticles: number;
+  readRate: number;
+  lastArticleDate: Date | null;
+  articlesPerDay: number;
+}
+
+export async function getFeedStatistics(feedUrl: string): Promise<FeedStats> {
+  try {
+    // Fetch all articles from the past 30 days for this feed
+    const allArticles = await fetchAllArticles('7d');
+    const feedArticles = allArticles.filter(article => article.feedUrl === feedUrl);
+
+    // Get read articles
+    const readGuids = await getReadArticlesList();
+    const readSet = new Set(readGuids);
+
+    const readArticles = feedArticles.filter(article => readSet.has(article.guid)).length;
+    const totalArticles = feedArticles.length;
+    const readRate = totalArticles > 0 ? (readArticles / totalArticles) * 100 : 0;
+
+    // Calculate last article date
+    const lastArticleDate = feedArticles.length > 0
+      ? feedArticles.reduce((latest, article) =>
+          article.pubDate > latest ? article.pubDate : latest,
+          feedArticles[0].pubDate
+        )
+      : null;
+
+    // Calculate articles per day (based on 7 day window)
+    const articlesPerDay = totalArticles / 7;
+
+    return {
+      feedUrl,
+      totalArticles,
+      readArticles,
+      readRate,
+      lastArticleDate,
+      articlesPerDay,
+    };
+  } catch (error) {
+    console.error('Error fetching feed statistics:', error);
+    return {
+      feedUrl,
+      totalArticles: 0,
+      readArticles: 0,
+      readRate: 0,
+      lastArticleDate: null,
+      articlesPerDay: 0,
+    };
+  }
+}
