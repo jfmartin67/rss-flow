@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
 import { fetchAllArticles, markAllAsRead } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 
@@ -25,6 +25,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [, setCurrentTime] = useState<Date>(new Date());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [hideReadArticles, setHideReadArticles] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const articlesContainerRef = useRef<HTMLDivElement>(null);
   const previousArticleCountRef = useRef(initialArticles.length);
@@ -144,10 +145,18 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     setSelectedCategories(new Set());
   };
 
-  // Filter articles by selected categories
-  const filteredArticles = selectedCategories.size === 0
-    ? articles
-    : articles.filter(article => selectedCategories.has(article.category));
+  // Filter articles by selected categories and read status
+  const filteredArticles = articles.filter(article => {
+    // Filter by category if categories are selected
+    if (selectedCategories.size > 0 && !selectedCategories.has(article.category)) {
+      return false;
+    }
+    // Filter out read articles if hideReadArticles is enabled
+    if (hideReadArticles && readGuids.has(article.guid)) {
+      return false;
+    }
+    return true;
+  });
 
   // Calculate feed velocities to identify low-velocity feeds
   const getFeedVelocities = (): Map<string, number> => {
@@ -282,6 +291,17 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
                 Last updated: {formatRefreshTime(lastRefreshTime)}
               </span>
+              <button
+                onClick={() => setHideReadArticles(!hideReadArticles)}
+                className={`p-2 rounded transition-colors ${
+                  hideReadArticles
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                title={hideReadArticles ? 'Show Read Articles' : 'Hide Read Articles'}
+              >
+                {hideReadArticles ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`p-2 rounded transition-colors ${
@@ -473,6 +493,20 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
               Actions
             </h3>
             <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setHideReadArticles(!hideReadArticles);
+                  setIsMenuOpen(false);
+                }}
+                className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  hideReadArticles
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                {hideReadArticles ? <EyeOff size={18} /> : <Eye size={18} />}
+                {hideReadArticles ? 'Show Read Articles' : 'Hide Read Articles'}
+              </button>
               <button
                 onClick={() => {
                   handleMarkAllAsRead();
