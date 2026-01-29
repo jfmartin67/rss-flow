@@ -380,7 +380,9 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
                             className="p-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                             title="Statistics"
                           >
-                            {isStatsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            <div className={`transition-transform duration-300 ${isStatsExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                              <ChevronDown size={16} />
+                            </div>
                           </button>
                           <button
                             onClick={() => handleEdit(feed)}
@@ -404,52 +406,74 @@ export default function FeedManager({ initialFeeds, feedStats }: FeedManagerProp
                   </div>
 
                   {/* Statistics Section */}
-                  {isStatsExpanded && stats && (
-                    <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                        Statistics (Last 7 Days)
-                      </h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="flex items-start gap-2">
-                          <TrendingUp size={16} className="text-blue-500 mt-0.5" />
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Total Articles</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.totalArticles}</p>
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      isStatsExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    {stats && (
+                      <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                          Statistics (Last 7 Days)
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div
+                            className={`flex items-start gap-2 transition-all duration-300 delay-75 ${
+                              isStatsExpanded ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+                            }`}
+                          >
+                            <TrendingUp size={16} className="text-blue-500 mt-0.5" />
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">Total Articles</p>
+                              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.totalArticles}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Eye size={16} className="text-green-500 mt-0.5" />
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Read Rate</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                              {stats.readRate.toFixed(0)}%
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-500">
-                              {stats.readArticles}/{stats.totalArticles}
-                            </p>
+                          <div
+                            className={`flex items-start gap-2 transition-all duration-300 delay-100 ${
+                              isStatsExpanded ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+                            }`}
+                          >
+                            <Eye size={16} className="text-green-500 mt-0.5" />
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">Read Rate</p>
+                              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                {stats.readRate.toFixed(0)}%
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500">
+                                {stats.readArticles}/{stats.totalArticles}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Calendar size={16} className="text-orange-500 mt-0.5" />
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Last Article</p>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                              {formatDate(stats.lastArticleDate)}
-                            </p>
+                          <div
+                            className={`flex items-start gap-2 transition-all duration-300 delay-150 ${
+                              isStatsExpanded ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+                            }`}
+                          >
+                            <Calendar size={16} className="text-orange-500 mt-0.5" />
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">Last Article</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                {formatDate(stats.lastArticleDate)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <Activity size={16} className="text-purple-500 mt-0.5" />
-                          <div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Per Day</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                              {stats.articlesPerDay.toFixed(1)}
-                            </p>
+                          <div
+                            className={`flex items-start gap-2 transition-all duration-300 delay-200 ${
+                              isStatsExpanded ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+                            }`}
+                          >
+                            <Activity size={16} className="text-purple-500 mt-0.5" />
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">Per Day</p>
+                              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                {stats.articlesPerDay.toFixed(1)}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
