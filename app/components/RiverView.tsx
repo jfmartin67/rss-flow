@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
@@ -8,6 +8,11 @@ import { fetchAllArticles, markAllAsRead } from '@/app/actions/articles';
 import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
+
+const PULL_THRESHOLD = 64;   // px of drag needed to trigger refresh
+const INDICATOR_HEIGHT = 56; // px height of the resting spinner area
+const ARC_RADIUS = 9;
+const ARC_CIRCUMFERENCE = 2 * Math.PI * ARC_RADIUS; // ≈ 56.5
 
 interface RiverViewProps {
   initialArticles: Article[];
@@ -30,15 +35,79 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const articlesContainerRef = useRef<HTMLDivElement>(null);
   const previousArticleCountRef = useRef(initialArticles.length);
 
-  // Pull-to-refresh state
-  const [pullDistance, setPullDistance] = useState(0);
+  // Pull-to-refresh — phase drives CSS class changes only; distance is raw DOM
+  const [pullPhase, setPullPhase] = useState<'idle' | 'pulling' | 'refreshing'>('idle');
+  const pullPhaseRef = useRef<'idle' | 'pulling' | 'refreshing'>('idle');
   const pullDistanceRef = useRef(0);
   const touchStartYRef = useRef(0);
   const isPullingRef = useRef(false);
-  const PULL_THRESHOLD = 72;
+  const springRafRef = useRef(0);
+  const prevIsPendingRef = useRef(false);
 
-  // Keep a stable ref to handleRefresh so the touch effect doesn't go stale
+  // DOM refs for direct 60fps manipulation (bypass React re-renders)
+  const indicatorWrapperRef = useRef<HTMLDivElement>(null);
+  const arcCircleRef = useRef<SVGCircleElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+
+  // Stable ref to handleRefresh to avoid stale closures in touch effect
   const handleRefreshRef = useRef<() => void>(() => {});
+
+  // Direct DOM update — called every animation frame, never triggers React render
+  const updateDOM = useCallback((distance: number) => {
+    const wrapper = indicatorWrapperRef.current;
+    if (!wrapper) return;
+    wrapper.style.height = `${Math.max(0, distance)}px`;
+
+    if (pullPhaseRef.current !== 'pulling') return;
+    const progress = Math.min(distance / PULL_THRESHOLD, 1);
+
+    // Arc fill: stroke-dashoffset goes from full (hidden) to 0 (complete circle)
+    if (arcCircleRef.current) {
+      arcCircleRef.current.style.strokeDashoffset = `${ARC_CIRCUMFERENCE * (1 - progress)}`;
+      arcCircleRef.current.style.opacity = `${0.3 + 0.7 * progress}`;
+    }
+    // Label fades in after 50% pulled
+    if (labelRef.current) {
+      labelRef.current.textContent = progress >= 1 ? 'Release to refresh' : '';
+      labelRef.current.style.opacity = `${Math.max(0, (progress - 0.5) * 2)}`;
+    }
+  }, []); // safe — only refs and module constants
+
+  // Spring physics: animates height from `from` → `to` with optional bounce overshoot
+  const runSpring = useCallback((
+    from: number,
+    to: number,
+    bounce: boolean,
+    onComplete?: () => void,
+  ) => {
+    cancelAnimationFrame(springRafRef.current);
+    let pos = from;
+    let vel = 0;
+    let lastT = performance.now();
+    const k = bounce ? 360 : 680;   // stiffness
+    const damp = bounce ? 24 : 52;  // damping — low = more oscillation
+
+    const step = (t: number) => {
+      const dt = Math.min((t - lastT) / 1000, 1 / 30);
+      lastT = t;
+      vel += (-k * (pos - to) - damp * vel) * dt;
+      pos += vel * dt;
+
+      // Clamp to 0 so we never show negative height
+      const display = to === 0 ? Math.max(0, pos) : pos;
+      pullDistanceRef.current = display;
+      updateDOM(display);
+
+      if (Math.abs(pos - to) > 0.5 || Math.abs(vel) > 5) {
+        springRafRef.current = requestAnimationFrame(step);
+      } else {
+        pullDistanceRef.current = to;
+        updateDOM(to);
+        onComplete?.();
+      }
+    };
+    springRafRef.current = requestAnimationFrame(step);
+  }, [updateDOM]);
 
   // Update the current time every minute to refresh the "last updated" display
   useEffect(() => {
@@ -84,46 +153,70 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     previousArticleCountRef.current = newArticleCount;
   }, [articles]);
 
-  // Pull-to-refresh touch handlers
+  // Pull-to-refresh touch handlers — non-passive touchmove to call preventDefault
   useEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
-      if (window.scrollY === 0) {
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.scrollY === 0 && pullPhaseRef.current === 'idle') {
         touchStartYRef.current = e.touches[0].clientY;
         isPullingRef.current = true;
       }
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
+    const onTouchMove = (e: TouchEvent) => {
       if (!isPullingRef.current) return;
       const delta = e.touches[0].clientY - touchStartYRef.current;
-      if (delta > 0) {
-        e.preventDefault();
-        const capped = Math.min(delta * 0.45, PULL_THRESHOLD * 1.4);
-        pullDistanceRef.current = capped;
-        setPullDistance(capped);
+      if (delta <= 0) { isPullingRef.current = false; return; }
+      e.preventDefault();
+
+      if (pullPhaseRef.current === 'idle') {
+        pullPhaseRef.current = 'pulling';
+        setPullPhase('pulling');
       }
+
+      // Rubber-band: ~60% speed before threshold, strong resistance after
+      const dist = delta < PULL_THRESHOLD
+        ? delta * 0.6
+        : PULL_THRESHOLD * 0.6 + (delta - PULL_THRESHOLD) * 0.12;
+
+      pullDistanceRef.current = dist;
+      updateDOM(dist);
     };
 
-    const handleTouchEnd = () => {
+    const onTouchEnd = () => {
       if (!isPullingRef.current) return;
       isPullingRef.current = false;
-      if (pullDistanceRef.current >= PULL_THRESHOLD) {
-        handleRefreshRef.current();
+      const dist = pullDistanceRef.current;
+
+      if (dist >= PULL_THRESHOLD) {
+        // Commit to refresh: reset pull visuals, snap to resting height, fire refresh
+        pullPhaseRef.current = 'refreshing';
+        setPullPhase('refreshing');
+        if (arcCircleRef.current) {
+          arcCircleRef.current.style.strokeDashoffset = '0';
+          arcCircleRef.current.style.opacity = '1';
+        }
+        if (labelRef.current) labelRef.current.style.opacity = '0';
+        runSpring(dist, INDICATOR_HEIGHT, false, () => handleRefreshRef.current());
+      } else {
+        // Didn't reach threshold — bounce back with spring
+        runSpring(dist, 0, true, () => {
+          setPullPhase('idle');
+          pullPhaseRef.current = 'idle';
+        });
       }
-      pullDistanceRef.current = 0;
-      setPullDistance(0);
     };
 
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
 
     return () => {
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+      cancelAnimationFrame(springRafRef.current);
     };
-  }, []);
+  }, [updateDOM, runSpring]);
 
   const handleTimeRangeChange = async (range: TimeRange) => {
     setTimeRange(range);
@@ -149,6 +242,17 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     });
   };
   handleRefreshRef.current = handleRefresh;
+
+  // When a refresh completes (isPending flips false), spring the indicator back
+  useEffect(() => {
+    if (prevIsPendingRef.current && !isPending && pullPhaseRef.current === 'refreshing') {
+      runSpring(pullDistanceRef.current, 0, true, () => {
+        setPullPhase('idle');
+        pullPhaseRef.current = 'idle';
+      });
+    }
+    prevIsPendingRef.current = isPending;
+  }, [isPending, runSpring]);
 
   const formatRefreshTime = (date: Date) => {
     const now = new Date();
@@ -600,23 +704,37 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
         </div>
       </HamburgerMenu>
 
-      {/* Pull-to-refresh indicator */}
-      {pullDistance > 0 && (
-        <div
-          className="flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden"
-          style={{ height: `${pullDistance}px` }}
-        >
-          <div className={`flex items-center gap-2 transition-opacity ${pullDistance >= PULL_THRESHOLD ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            <RefreshCw
-              size={20}
-              style={{ transform: `rotate(${pullDistance * 3}deg)`, transition: 'color 0.15s' }}
-            />
-            <span className="text-sm font-medium">
-              {pullDistance >= PULL_THRESHOLD ? 'Release to refresh' : 'Pull to refresh'}
-            </span>
+      {/* Pull-to-refresh indicator — height driven by direct DOM, never by React state */}
+      <div
+        ref={indicatorWrapperRef}
+        className="w-full bg-white dark:bg-gray-900 overflow-hidden flex flex-col justify-end"
+        style={{ height: 0 }}
+      >
+        <div className={`h-[56px] flex items-center justify-center gap-2 ${
+          pullPhase === 'refreshing' ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500'
+        }`}>
+          {/* Arc fills as you pull; becomes a full spinning circle during refresh */}
+          <div className={pullPhase === 'refreshing' ? 'animate-spin' : ''}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle
+                cx="11" cy="11" r={ARC_RADIUS}
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray={ARC_CIRCUMFERENCE}
+                strokeDashoffset={ARC_CIRCUMFERENCE}
+                ref={arcCircleRef}
+                style={{ transform: 'rotate(-90deg)', transformOrigin: '11px 11px', opacity: 0 }}
+              />
+            </svg>
           </div>
+          <span
+            ref={labelRef}
+            className="text-sm font-medium"
+            style={{ opacity: 0 }}
+          />
         </div>
-      )}
+      </div>
 
       <main className="w-full">
         {articles.length === 0 ? (
