@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Red_Hat_Display } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const redHatDisplay = Red_Hat_Display({
   subsets: ["latin"],
@@ -71,6 +72,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
