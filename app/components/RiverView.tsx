@@ -30,6 +30,16 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const articlesContainerRef = useRef<HTMLDivElement>(null);
   const previousArticleCountRef = useRef(initialArticles.length);
 
+  // Pull-to-refresh state
+  const [pullDistance, setPullDistance] = useState(0);
+  const pullDistanceRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const isPullingRef = useRef(false);
+  const PULL_THRESHOLD = 72;
+
+  // Keep a stable ref to handleRefresh so the touch effect doesn't go stale
+  const handleRefreshRef = useRef<() => void>(() => {});
+
   // Update the current time every minute to refresh the "last updated" display
   useEffect(() => {
     const interval = setInterval(() => {
@@ -74,6 +84,47 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     previousArticleCountRef.current = newArticleCount;
   }, [articles]);
 
+  // Pull-to-refresh touch handlers
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.scrollY === 0) {
+        touchStartYRef.current = e.touches[0].clientY;
+        isPullingRef.current = true;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isPullingRef.current) return;
+      const delta = e.touches[0].clientY - touchStartYRef.current;
+      if (delta > 0) {
+        e.preventDefault();
+        const capped = Math.min(delta * 0.45, PULL_THRESHOLD * 1.4);
+        pullDistanceRef.current = capped;
+        setPullDistance(capped);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!isPullingRef.current) return;
+      isPullingRef.current = false;
+      if (pullDistanceRef.current >= PULL_THRESHOLD) {
+        handleRefreshRef.current();
+      }
+      pullDistanceRef.current = 0;
+      setPullDistance(0);
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
+
   const handleTimeRangeChange = async (range: TimeRange) => {
     setTimeRange(range);
     startTransition(async () => {
@@ -97,6 +148,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
       setLastRefreshTime(new Date());
     });
   };
+  handleRefreshRef.current = handleRefresh;
 
   const formatRefreshTime = (date: Date) => {
     const now = new Date();
@@ -547,6 +599,24 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
           </div>
         </div>
       </HamburgerMenu>
+
+      {/* Pull-to-refresh indicator */}
+      {pullDistance > 0 && (
+        <div
+          className="flex items-center justify-center bg-white dark:bg-gray-900 overflow-hidden"
+          style={{ height: `${pullDistance}px` }}
+        >
+          <div className={`flex items-center gap-2 transition-opacity ${pullDistance >= PULL_THRESHOLD ? 'text-orange-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            <RefreshCw
+              size={20}
+              style={{ transform: `rotate(${pullDistance * 3}deg)`, transition: 'color 0.15s' }}
+            />
+            <span className="text-sm font-medium">
+              {pullDistance >= PULL_THRESHOLD ? 'Release to refresh' : 'Pull to refresh'}
+            </span>
+          </div>
+        </div>
+      )}
 
       <main className="w-full">
         {articles.length === 0 ? (
