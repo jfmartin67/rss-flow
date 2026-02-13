@@ -4,24 +4,21 @@ import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
-import { fetchAllArticles, markAllAsRead } from '@/app/actions/articles';
+import { fetchAllArticles, markAllAsRead, getReadArticlesList } from '@/app/actions/articles';
 import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
+import LoadingSkeleton from './LoadingSkeleton';
 
 const PULL_THRESHOLD = 64;   // px of drag needed to trigger refresh
 const INDICATOR_HEIGHT = 56; // px height of the resting spinner area
 const ARC_RADIUS = 9;
 const ARC_CIRCUMFERENCE = 2 * Math.PI * ARC_RADIUS; // ≈ 56.5
 
-interface RiverViewProps {
-  initialArticles: Article[];
-  initialReadGuids: string[];
-}
-
-export default function RiverView({ initialArticles, initialReadGuids }: RiverViewProps) {
-  const [articles, setArticles] = useState(initialArticles);
-  const [readGuids, setReadGuids] = useState<Set<string>>(new Set(initialReadGuids));
+export default function RiverView() {
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [readGuids, setReadGuids] = useState<Set<string>>(new Set());
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [contentLines, setContentLines] = useState<ContentLines>(0);
   const [isPending, startTransition] = useTransition();
@@ -33,7 +30,7 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
   const [hideReadArticles, setHideReadArticles] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const articlesContainerRef = useRef<HTMLDivElement>(null);
-  const previousArticleCountRef = useRef(initialArticles.length);
+  const previousArticleCountRef = useRef(0);
 
   // Pull-to-refresh — phase drives CSS class changes only; distance is raw DOM
   const [pullPhase, setPullPhase] = useState<'idle' | 'pulling' | 'refreshing'>('idle');
@@ -108,6 +105,15 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     };
     springRafRef.current = requestAnimationFrame(step);
   }, [updateDOM]);
+
+  // Fetch initial data client-side so the loading skeleton is always visible
+  useEffect(() => {
+    Promise.all([fetchAllArticles('24h'), getReadArticlesList()]).then(([arts, guids]) => {
+      setArticles(arts);
+      setReadGuids(new Set(guids));
+      setIsInitialLoading(false);
+    });
+  }, []);
 
   // Update the current time every minute to refresh the "last updated" display
   useEffect(() => {
@@ -358,6 +364,8 @@ export default function RiverView({ initialArticles, initialReadGuids }: RiverVi
     // Persist to database
     await markAllAsRead(unreadGuids);
   };
+
+  if (isInitialLoading) return <LoadingSkeleton />;
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
