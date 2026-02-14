@@ -496,9 +496,9 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
   return createPortal(
     <>
-      {/* Backdrop */}
+      {/* Backdrop — full dim on mobile, transparent on desktop (still closes panel on click) */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-200"
+        className="fixed inset-0 bg-black/50 md:bg-black/0 z-50 transition-opacity duration-200"
         onClick={(e) => {
           // Only close if clicking the backdrop itself, not bubbled events
           if (e.target === e.currentTarget) {
@@ -508,14 +508,14 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         aria-hidden="true"
       />
 
-      {/* Modal */}
+      {/* Modal — centered overlay on mobile, right-side panel on desktop/iPad */}
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="article-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="fixed inset-4 md:inset-8 lg:inset-16 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-2xl flex flex-col overflow-hidden"
+        className="fixed z-50 bg-white dark:bg-gray-900 shadow-2xl flex flex-col overflow-hidden inset-4 rounded-lg md:top-0 md:bottom-0 md:right-0 md:left-auto md:w-[60%] md:rounded-r-none md:rounded-l-xl border-l border-gray-200 dark:border-gray-700"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 select-text">
