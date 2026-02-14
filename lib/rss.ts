@@ -2,6 +2,7 @@ import Parser from 'rss-parser';
 import { Article, Feed } from '@/types';
 import { extractFullArticle } from './extract';
 import { RSS_PARSER_TIMEOUT, RSS_EXCERPT_THRESHOLD, RSS_CONTENT_MIN_LENGTH } from './config';
+import { sanitizeArticleHtml } from './sanitize';
 
 const parser = new Parser({
   timeout: RSS_PARSER_TIMEOUT,
@@ -83,17 +84,17 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
       const extractedContent = await extractFullArticle(item.link);
 
       if (extractedContent) {
-        return extractedContent;
+        return sanitizeArticleHtml(extractedContent);
       }
     }
 
     // If we have substantial RSS content (and didn't extract), use it
     if (rssContent && rssContent.length > RSS_CONTENT_MIN_LENGTH) {
-      return rssContent;
+      return sanitizeArticleHtml(rssContent);
     }
 
     // Fallback to whatever RSS provided
-    return rssContent || contentSnippet;
+    return sanitizeArticleHtml(rssContent || contentSnippet);
   } catch (error) {
     console.error(`Error fetching article content from ${feedUrl}:`, error);
     return '';
