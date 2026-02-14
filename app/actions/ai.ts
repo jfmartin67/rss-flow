@@ -3,6 +3,7 @@
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import Redis from 'ioredis';
+import { AI_MODEL, AI_MAX_INPUT_CHARS, AI_CACHE_TTL_SECONDS, AI_MAX_QUOTES, AI_MAX_QUOTE_LENGTH } from '@/lib/config';
 
 // Namespace prefix to match the rest of the app
 const KV_PREFIX = process.env.KV_PREFIX || 'rss-flow';
@@ -44,21 +45,20 @@ export async function generateSummary(content: string, articleGuid: string): Pro
     const plainText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
     // Limit content length to avoid excessive token usage (roughly 3000 words)
-    const maxChars = 15000;
-    const truncatedContent = plainText.length > maxChars
-      ? plainText.substring(0, maxChars) + '...'
+    const truncatedContent = plainText.length > AI_MAX_INPUT_CHARS
+      ? plainText.substring(0, AI_MAX_INPUT_CHARS) + '...'
       : plainText;
 
     console.log(`Generating summary for ${articleGuid} (${truncatedContent.length} chars)`);
 
     // Generate summary using Claude
     const { text } = await generateText({
-      model: anthropic('claude-3-5-haiku-20241022'), // Fast and cost-effective
+      model: anthropic(AI_MODEL), // Fast and cost-effective
       prompt: `Summarize the following article in 2-3 concise sentences. Focus on the main points and key takeaways:\n\n${truncatedContent}`,
     });
 
     // Cache for 90 days (Redis EX is in seconds)
-    await redis.set(cacheKey, text, 'EX', 60 * 60 * 24 * 90);
+    await redis.set(cacheKey, text, 'EX', AI_CACHE_TTL_SECONDS);
 
     console.log(`Summary generated and cached for ${articleGuid}`);
     return { success: true, summary: text };
@@ -102,16 +102,15 @@ export async function extractKeyQuotes(content: string, articleGuid: string): Pr
     const plainText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
     // Limit content length to avoid excessive token usage
-    const maxChars = 15000;
-    const truncatedContent = plainText.length > maxChars
-      ? plainText.substring(0, maxChars) + '...'
+    const truncatedContent = plainText.length > AI_MAX_INPUT_CHARS
+      ? plainText.substring(0, AI_MAX_INPUT_CHARS) + '...'
       : plainText;
 
     console.log(`Extracting key quotes for ${articleGuid} (${truncatedContent.length} chars)`);
 
     // Extract quotes using Claude
     const { text } = await generateText({
-      model: anthropic('claude-3-5-haiku-20241022'),
+      model: anthropic(AI_MODEL),
       prompt: `Extract 2-3 of the most important, quotable, or insightful sentences from the following article. These should be complete sentences that stand alone and capture key insights, arguments, or facts. Return ONLY the quotes, one per line, without numbering or additional commentary:\n\n${truncatedContent}`,
     });
 
@@ -119,15 +118,14 @@ export async function extractKeyQuotes(content: string, articleGuid: string): Pr
     const quotes = text
       .split('\n')
       .map(q => q.trim())
-      .filter(q => q.length > 0 && q.length < 500) // Filter out empty and too long
-      .slice(0, 3); // Ensure max 3 quotes
+      .filter(q => q.length > 0 && q.length < AI_MAX_QUOTE_LENGTH)
+      .slice(0, AI_MAX_QUOTES);
 
     if (quotes.length === 0) {
       return { success: false, error: 'No quotes extracted' };
     }
 
-    // Cache for 90 days (Redis EX is in seconds)
-    await redis.set(cacheKey, JSON.stringify(quotes), 'EX', 60 * 60 * 24 * 90);
+    await redis.set(cacheKey, JSON.stringify(quotes), 'EX', AI_CACHE_TTL_SECONDS);
 
     console.log(`${quotes.length} quotes extracted and cached for ${articleGuid}`);
     return { success: true, quotes };

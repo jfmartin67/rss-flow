@@ -1,9 +1,10 @@
 import Parser from 'rss-parser';
 import { Article, Feed } from '@/types';
 import { extractFullArticle } from './extract';
+import { RSS_PARSER_TIMEOUT, RSS_EXCERPT_THRESHOLD, RSS_CONTENT_MIN_LENGTH } from './config';
 
 const parser = new Parser({
-  timeout: 10000,
+  timeout: RSS_PARSER_TIMEOUT,
   headers: {
     'User-Agent': 'RSS-Flow/1.0',
   },
@@ -75,7 +76,7 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
 
     // Check if this is likely just an excerpt by looking at the text content length
     // contentSnippet is the text-only version, so it's a better indicator
-    const isLikelyExcerpt = contentSnippet.length < 1000;
+    const isLikelyExcerpt = contentSnippet.length < RSS_EXCERPT_THRESHOLD;
 
     // If content snippet suggests this is an excerpt, try to extract the full article
     if (isLikelyExcerpt && item.link) {
@@ -87,7 +88,7 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
     }
 
     // If we have substantial RSS content (and didn't extract), use it
-    if (rssContent && rssContent.length > 500) {
+    if (rssContent && rssContent.length > RSS_CONTENT_MIN_LENGTH) {
       return rssContent;
     }
 

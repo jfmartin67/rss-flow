@@ -4,6 +4,7 @@ import { Article, TimeRange } from '@/types';
 import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead, markMultipleArticlesAsRead as dbMarkMultipleAsRead } from '@/lib/db';
 import { fetchAllFeeds, fetchArticleContent as rssFetchArticleContent } from '@/lib/rss';
 import { filterByTimeRange, interleaveArticles } from '@/lib/utils';
+import { FEED_MAX_CONSECUTIVE, STATS_WINDOW_DAYS } from '@/lib/config';
 
 export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<Article[]> {
   try {
@@ -19,7 +20,7 @@ export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<Ar
     const filteredArticles = filterByTimeRange(articles, timeRange);
 
     // Apply smart interleaving to balance feed velocity
-    const interleavedArticles = interleaveArticles(filteredArticles, 2);
+    const interleavedArticles = interleaveArticles(filteredArticles, FEED_MAX_CONSECUTIVE);
 
     return interleavedArticles;
   } catch (error) {
@@ -82,7 +83,6 @@ export interface FeedStats {
 
 export async function getFeedStatistics(feedUrl: string): Promise<FeedStats> {
   try {
-    // Fetch all articles from the past 30 days for this feed
     const allArticles = await fetchAllArticles('7d');
     const feedArticles = allArticles.filter(article => article.feedUrl === feedUrl);
 
@@ -102,8 +102,7 @@ export async function getFeedStatistics(feedUrl: string): Promise<FeedStats> {
         )
       : null;
 
-    // Calculate articles per day (based on 7 day window)
-    const articlesPerDay = totalArticles / 7;
+    const articlesPerDay = totalArticles / STATS_WINDOW_DAYS;
 
     return {
       feedUrl,

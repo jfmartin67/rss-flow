@@ -1,5 +1,6 @@
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
+import { EXTRACT_READABILITY_CHAR_THRESHOLD, EXTRACT_MIN_CONTENT_LENGTH } from './config';
 
 /**
  * Extracts the full article content from a URL using Mozilla Readability.
@@ -39,7 +40,7 @@ export async function extractFullArticle(url: string): Promise<string | null> {
     // Use Mozilla Readability to parse the article
     const reader = new Readability(document, {
       debug: false,
-      charThreshold: 500, // Minimum character count
+      charThreshold: EXTRACT_READABILITY_CHAR_THRESHOLD,
     });
     const article = reader.parse();
 
@@ -48,7 +49,7 @@ export async function extractFullArticle(url: string): Promise<string | null> {
     }
 
     // Validate that we got meaningful content
-    if (article.content.length < 200) {
+    if (article.content.length < EXTRACT_MIN_CONTENT_LENGTH) {
       return null;
     }
 

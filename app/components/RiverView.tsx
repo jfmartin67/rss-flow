@@ -10,10 +10,13 @@ import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, C
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 import LoadingSkeleton from './LoadingSkeleton';
+import {
+  PULL_THRESHOLD, INDICATOR_HEIGHT, ARC_RADIUS,
+  SPRING_STIFFNESS_BOUNCE, SPRING_STIFFNESS_SNAP, SPRING_DAMPING_BOUNCE, SPRING_DAMPING_SNAP,
+  VIRTUAL_ITEM_HEIGHT, VIRTUAL_OVERSCAN,
+  FEED_VELOCITY_THRESHOLDS,
+} from '@/lib/config';
 
-const PULL_THRESHOLD = 64;   // px of drag needed to trigger refresh
-const INDICATOR_HEIGHT = 56; // px height of the resting spinner area
-const ARC_RADIUS = 9;
 const ARC_CIRCUMFERENCE = 2 * Math.PI * ARC_RADIUS; // ≈ 56.5
 
 export default function RiverView() {
@@ -81,8 +84,8 @@ export default function RiverView() {
     let pos = from;
     let vel = 0;
     let lastT = performance.now();
-    const k = bounce ? 360 : 680;   // stiffness
-    const damp = bounce ? 24 : 52;  // damping — low = more oscillation
+    const k = bounce ? SPRING_STIFFNESS_BOUNCE : SPRING_STIFFNESS_SNAP;
+    const damp = bounce ? SPRING_DAMPING_BOUNCE : SPRING_DAMPING_SNAP;
 
     const step = (t: number) => {
       const dt = Math.min((t - lastT) / 1000, 1 / 30);
@@ -294,22 +297,15 @@ export default function RiverView() {
     return counts;
   }, [articles]);
 
-  const velocityThresholds = { '24h': 1, '3d': 2, '7d': 3 };
-
   const isLowVelocityFeed = useCallback((feedUrl: string): boolean => {
-    return (feedVelocities.get(feedUrl) || 0) <= velocityThresholds[timeRange];
+    return (feedVelocities.get(feedUrl) || 0) <= FEED_VELOCITY_THRESHOLDS[timeRange];
   }, [feedVelocities, timeRange]);
 
   // Virtualizer — measures actual rendered heights; estimateSize is just the initial guess
   const virtualizer = useWindowVirtualizer({
     count: filteredArticles.length,
-    estimateSize: useCallback(() => {
-      if (contentLines === 0) return 37;
-      if (contentLines === 1) return 62;
-      if (contentLines === 2) return 82;
-      return 102;
-    }, [contentLines]),
-    overscan: 8,
+    estimateSize: useCallback(() => VIRTUAL_ITEM_HEIGHT[contentLines], [contentLines]),
+    overscan: VIRTUAL_OVERSCAN,
     scrollMargin: listRef.current?.offsetTop ?? 0,
   });
 

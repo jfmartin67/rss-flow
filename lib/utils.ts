@@ -1,4 +1,5 @@
 import { Article, TimeRange, ContentLines } from '@/types';
+import { CONTENT_TRUNCATE_CHARS } from './config';
 
 export function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -56,7 +57,7 @@ export function truncateContent(content: string, lines: ContentLines): string {
   const truncated = contentLines.slice(0, lines).join(' ');
 
   // Limit total characters for safety
-  const maxLength = lines === 1 ? 200 : lines === 2 ? 400 : 600;
+  const maxLength = CONTENT_TRUNCATE_CHARS[lines as 1 | 2 | 3];
   if (truncated.length > maxLength) {
     return truncated.substring(0, maxLength) + '...';
   }
