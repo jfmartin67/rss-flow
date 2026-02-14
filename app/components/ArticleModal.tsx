@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ExternalLink, Loader2, Copy, Send, Sparkles, Quote } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime } from '@/lib/utils';
@@ -493,7 +494,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -707,6 +708,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
