@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Sparkles, Loader2, FileText } from 'lucide-react';
+import { X, Sparkles, Loader2 } from 'lucide-react';
 import { Article } from '@/types';
 import { generateUnreadDigest, DigestResult } from '@/app/actions/ai';
 
@@ -10,15 +10,14 @@ interface DigestPanelProps {
   isOpen: boolean;
   onClose: () => void;
   unreadArticles: Article[];
-  onOpenArticle: (article: Article) => void;
 }
 
-export default function DigestPanel({ isOpen, onClose, unreadArticles, onOpenArticle }: DigestPanelProps) {
+export default function DigestPanel({ isOpen, onClose, unreadArticles }: DigestPanelProps) {
   const [digest, setDigest] = useState<DigestResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Fetch digest whenever the panel opens (reset on close so it re-fetches with fresh data next time)
+  // Fetch digest whenever the panel opens
   useEffect(() => {
     if (!isOpen || unreadArticles.length === 0) return;
     if (digest !== null) return;
@@ -40,7 +39,7 @@ export default function DigestPanel({ isOpen, onClose, unreadArticles, onOpenArt
     fetchDigest();
   }, [isOpen, unreadArticles, digest]);
 
-  // Reset digest when closed so next open re-fetches with current unread list
+  // Reset on close so next open re-fetches with current unread list
   useEffect(() => {
     if (!isOpen) setDigest(null);
   }, [isOpen]);
@@ -56,8 +55,6 @@ export default function DigestPanel({ isOpen, onClose, unreadArticles, onOpenArt
 
   if (!isOpen) return null;
 
-  const findArticle = (guid: string) => unreadArticles.find(a => a.guid === guid);
-
   return createPortal(
     <>
       {/* Backdrop — dim on mobile, transparent on desktop */}
@@ -67,7 +64,7 @@ export default function DigestPanel({ isOpen, onClose, unreadArticles, onOpenArt
         aria-hidden="true"
       />
 
-      {/* Panel — mirrors ArticleModal layout */}
+      {/* Panel */}
       <div
         ref={panelRef}
         role="dialog"
@@ -104,58 +101,10 @@ export default function DigestPanel({ isOpen, onClose, unreadArticles, onOpenArt
                 Analysing your {unreadArticles.length} unread article{unreadArticles.length !== 1 ? 's' : ''}…
               </span>
             </div>
-          ) : digest?.success && digest.themes ? (
-            <div className="space-y-6">
-              {/* Intro sentence */}
-              {digest.intro && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed italic border-l-4 border-orange-400 pl-3">
-                  {digest.intro}
-                </p>
-              )}
-
-              {/* Themed clusters */}
-              {digest.themes.map((theme, ti) => (
-                <div key={ti}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-2">
-                    {theme.label}
-                  </h3>
-                  <div className="space-y-1">
-                    {theme.articles.map((item) => {
-                      const article = findArticle(item.guid);
-                      return (
-                        <button
-                          key={item.guid}
-                          onClick={() => {
-                            if (article) onOpenArticle(article);
-                          }}
-                          className="w-full text-left group flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                          <FileText
-                            size={14}
-                            className="text-gray-400 dark:text-gray-600 flex-shrink-0 mt-0.5 group-hover:text-orange-500 transition-colors"
-                          />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors leading-snug"
-                              style={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {item.title}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
-                              {item.feedName}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+          ) : digest?.success && digest.abstract ? (
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {digest.abstract}
+            </p>
           ) : (
             <div className="text-center py-12 text-sm text-gray-500 dark:text-gray-400">
               {digest?.error ?? 'Could not generate digest. Try again later.'}

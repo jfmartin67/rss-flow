@@ -854,7 +854,6 @@ export default function RiverView() {
         isOpen={isDigestOpen}
         onClose={() => setIsDigestOpen(false)}
         unreadArticles={unreadArticles}
-        onOpenArticle={handleOpenArticleFromDigest}
       />
 
       {/* Article modal opened from within the digest */}

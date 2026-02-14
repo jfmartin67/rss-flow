@@ -5,15 +5,9 @@ import { anthropic } from '@ai-sdk/anthropic';
 import Redis from 'ioredis';
 import { AI_MODEL, AI_MAX_INPUT_CHARS, AI_CACHE_TTL_SECONDS, AI_MAX_QUOTES, AI_MAX_QUOTE_LENGTH } from '@/lib/config';
 
-export interface DigestTheme {
-  label: string;
-  articles: Array<{ guid: string; title: string; link: string; feedName: string }>;
-}
-
 export interface DigestResult {
   success: boolean;
-  intro?: string;
-  themes?: DigestTheme[];
+  abstract?: string;
   error?: string;
 }
 
@@ -175,44 +169,13 @@ export async function generateUnreadDigest(
 
     const { text } = await generateText({
       model: anthropic(AI_MODEL),
-      prompt: `You are a reading digest assistant. Group these ${capped.length} unread RSS article titles into 2-5 thematic clusters by topic similarity. Give each cluster a concise label (2-5 words). Write a single-sentence overview of the reading list.
+      prompt: `You are a reading digest assistant. Write a dense, informative abstract of the following unread RSS article titles — like a morning briefing paragraph. Cover the main topics and notable stories in 3-5 sentences. Be specific about subjects, names, and themes. Plain prose only, no bullet points, no headers.
 
-Return ONLY valid JSON — no markdown fences, no extra text — exactly this shape:
-{
-  "intro": "One sentence overview.",
-  "themes": [
-    { "label": "Theme Label", "indices": [0, 2, 5] }
-  ]
-}
-
-Articles:
-${JSON.stringify(articlesForPrompt)}`,
+Article titles:
+${articlesForPrompt.map(a => `- ${a.title} (${a.feedName})`).join('\n')}`,
     });
 
-    let parsed: { intro: string; themes: Array<{ label: string; indices: number[] }> };
-    try {
-      const cleaned = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error('Digest JSON parse failed:', text);
-      return { success: false, error: 'Failed to parse AI response' };
-    }
-
-    const themes: DigestTheme[] = parsed.themes
-      .map(theme => ({
-        label: theme.label,
-        articles: theme.indices
-          .filter(i => i >= 0 && i < capped.length)
-          .map(i => ({
-            guid: capped[i].guid,
-            title: capped[i].title,
-            link: capped[i].link,
-            feedName: capped[i].feedName,
-          })),
-      }))
-      .filter(t => t.articles.length > 0);
-
-    return { success: true, intro: parsed.intro, themes };
+    return { success: true, abstract: text.trim() };
 
   } catch (error) {
     console.error('Error generating digest:', error);
