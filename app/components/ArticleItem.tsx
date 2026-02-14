@@ -63,10 +63,18 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, isL
       }`}
     >
       <div className="flex items-start gap-2">
-        <div
-          className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 ${isRead ? 'invisible' : ''}`}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isRead) {
+              onRead(article.guid);
+              markAsRead(article.guid);
+            }
+          }}
+          className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 transition-opacity ${isRead ? 'invisible' : 'hover:opacity-60'}`}
           style={{ backgroundColor: article.categoryColor }}
-          title={article.category}
+          title="Mark as read"
+          aria-label="Mark as read"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2">
