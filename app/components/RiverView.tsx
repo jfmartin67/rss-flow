@@ -208,6 +208,14 @@ export default function RiverView() {
     setReadGuids(prev => new Set(prev).add(guid));
   };
 
+  const handleMarkAsUnread = (guid: string) => {
+    setReadGuids(prev => {
+      const next = new Set(prev);
+      next.delete(guid);
+      return next;
+    });
+  };
+
   const handleRefresh = async () => {
     startTransition(async () => {
       const newArticles = await fetchAllArticles(timeRange);
@@ -751,6 +759,7 @@ export default function RiverView() {
                       isRead={readGuids.has(article.guid)}
                       contentLines={contentLines}
                       onRead={handleMarkAsRead}
+                      onUnread={handleMarkAsUnread}
                       isLowVelocity={isLowVelocityFeed(article.feedUrl)}
                     />
                   </div>

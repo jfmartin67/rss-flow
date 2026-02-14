@@ -64,6 +64,15 @@ export async function deleteFeed(id: string): Promise<void> {
   await saveFeeds(filteredFeeds);
 }
 
+export async function unmarkArticleAsRead(guid: string): Promise<void> {
+  try {
+    await redis.srem(READ_ARTICLES_KEY, guid);
+  } catch (error) {
+    console.error('Error unmarking article as read:', error);
+    throw new Error('Failed to unmark article as read');
+  }
+}
+
 export async function markArticleAsRead(guid: string): Promise<void> {
   try {
     await redis.sadd(READ_ARTICLES_KEY, guid);

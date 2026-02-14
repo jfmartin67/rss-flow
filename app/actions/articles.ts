@@ -1,7 +1,7 @@
 'use server';
 
 import { Article, TimeRange } from '@/types';
-import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead, markMultipleArticlesAsRead as dbMarkMultipleAsRead } from '@/lib/db';
+import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead, unmarkArticleAsRead as dbUnmarkAsRead, markMultipleArticlesAsRead as dbMarkMultipleAsRead } from '@/lib/db';
 import { fetchAllFeeds, fetchArticleContent as rssFetchArticleContent } from '@/lib/rss';
 import { filterByTimeRange, interleaveArticles } from '@/lib/utils';
 import { FEED_MAX_CONSECUTIVE, STATS_WINDOW_DAYS } from '@/lib/config';
@@ -35,6 +35,16 @@ export async function markAsRead(guid: string): Promise<{ success: boolean }> {
     return { success: true };
   } catch (error) {
     console.error('Error marking article as read:', error);
+    return { success: false };
+  }
+}
+
+export async function markAsUnread(guid: string): Promise<{ success: boolean }> {
+  try {
+    await dbUnmarkAsRead(guid);
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking article as unread:', error);
     return { success: false };
   }
 }

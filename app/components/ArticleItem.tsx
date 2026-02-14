@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Article, ContentLines } from '@/types';
 import { formatRelativeTime, truncateContent } from '@/lib/utils';
-import { markAsRead, fetchArticleContent } from '@/app/actions/articles';
+import { markAsRead, markAsUnread, fetchArticleContent } from '@/app/actions/articles';
 import ArticleModal from './ArticleModal';
 
 interface ArticleItemProps {
@@ -12,10 +12,11 @@ interface ArticleItemProps {
   isRead: boolean;
   contentLines: ContentLines;
   onRead: (guid: string) => void;
+  onUnread: (guid: string) => void;
   isLowVelocity?: boolean;
 }
 
-export default function ArticleItem({ article, isRead, contentLines, onRead, isLowVelocity = false }: ArticleItemProps) {
+export default function ArticleItem({ article, isRead, contentLines, onRead, onUnread, isLowVelocity = false }: ArticleItemProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
@@ -66,15 +67,22 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, isL
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (!isRead) {
+            if (isRead) {
+              onUnread(article.guid);
+              markAsUnread(article.guid);
+            } else {
               onRead(article.guid);
               markAsRead(article.guid);
             }
           }}
-          className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 transition-opacity ${isRead ? 'invisible' : 'hover:opacity-60'}`}
-          style={{ backgroundColor: article.categoryColor }}
-          title="Mark as read"
-          aria-label="Mark as read"
+          className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 transition-opacity flex-shrink-0 ${
+            isRead
+              ? 'border border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
+              : 'hover:opacity-60'
+          }`}
+          style={isRead ? undefined : { backgroundColor: article.categoryColor }}
+          title={isRead ? 'Mark as unread' : 'Mark as read'}
+          aria-label={isRead ? 'Mark as unread' : 'Mark as read'}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2">
