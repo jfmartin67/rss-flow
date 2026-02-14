@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
+import { useState, useTransition, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
@@ -29,8 +30,7 @@ export default function RiverView() {
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [hideReadArticles, setHideReadArticles] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const articlesContainerRef = useRef<HTMLDivElement>(null);
-  const previousArticleCountRef = useRef(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Pull-to-refresh — phase drives CSS class changes only; distance is raw DOM
   const [pullPhase, setPullPhase] = useState<'idle' | 'pulling' | 'refreshing'>('idle');
@@ -123,41 +123,6 @@ export default function RiverView() {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Smooth scroll animation when new articles are added
-  useEffect(() => {
-    const container = articlesContainerRef.current;
-    if (!container) return;
-
-    const newArticleCount = articles.length;
-    const previousCount = previousArticleCountRef.current;
-
-    // Only animate if we have new articles (more than before)
-    if (newArticleCount > previousCount && previousCount > 0) {
-      // Wait for DOM to update
-      requestAnimationFrame(() => {
-        const firstArticle = container.firstElementChild as HTMLElement;
-        if (firstArticle) {
-          // Calculate the height of new content
-          const newArticlesCount = newArticleCount - previousCount;
-          let totalHeight = 0;
-
-          for (let i = 0; i < Math.min(newArticlesCount, container.children.length); i++) {
-            const child = container.children[i] as HTMLElement;
-            totalHeight += child.offsetHeight;
-          }
-
-          // Smoothly scroll down to reveal new content
-          window.scrollTo({
-            top: window.scrollY + totalHeight,
-            behavior: 'smooth'
-          });
-        }
-      });
-    }
-
-    previousArticleCountRef.current = newArticleCount;
-  }, [articles]);
 
   // Pull-to-refresh touch handlers — non-passive touchmove to call preventDefault
   useEffect(() => {
@@ -320,28 +285,33 @@ export default function RiverView() {
     return true;
   });
 
-  // Calculate feed velocities to identify low-velocity feeds
-  const getFeedVelocities = (): Map<string, number> => {
-    const feedCounts = new Map<string, number>();
+  // Memoized feed velocities — computed once per articles/timeRange change, not per item
+  const feedVelocities = useMemo(() => {
+    const counts = new Map<string, number>();
     articles.forEach(article => {
-      feedCounts.set(article.feedUrl, (feedCounts.get(article.feedUrl) || 0) + 1);
+      counts.set(article.feedUrl, (counts.get(article.feedUrl) || 0) + 1);
     });
-    return feedCounts;
-  };
+    return counts;
+  }, [articles]);
 
-  const isLowVelocityFeed = (feedUrl: string): boolean => {
-    const velocities = getFeedVelocities();
-    const count = velocities.get(feedUrl) || 0;
+  const velocityThresholds = { '24h': 1, '3d': 2, '7d': 3 };
 
-    // Define thresholds based on time range
-    const thresholds = {
-      '24h': 1,
-      '3d': 2,
-      '7d': 3,
-    };
+  const isLowVelocityFeed = useCallback((feedUrl: string): boolean => {
+    return (feedVelocities.get(feedUrl) || 0) <= velocityThresholds[timeRange];
+  }, [feedVelocities, timeRange]);
 
-    return count <= thresholds[timeRange];
-  };
+  // Virtualizer — measures actual rendered heights; estimateSize is just the initial guess
+  const virtualizer = useWindowVirtualizer({
+    count: filteredArticles.length,
+    estimateSize: useCallback(() => {
+      if (contentLines === 0) return 37;
+      if (contentLines === 1) return 62;
+      if (contentLines === 2) return 82;
+      return 102;
+    }, [contentLines]),
+    overscan: 8,
+    scrollMargin: listRef.current?.offsetTop ?? 0,
+  });
 
   // Calculate unread count for filtered articles
   const unreadCount = filteredArticles.filter(article => !readGuids.has(article.guid)).length;
@@ -758,17 +728,39 @@ export default function RiverView() {
             </p>
           </div>
         ) : (
-          <div ref={articlesContainerRef}>
-            {filteredArticles.map((article) => (
-              <ArticleItem
-                key={article.guid}
-                article={article}
-                isRead={readGuids.has(article.guid)}
-                contentLines={contentLines}
-                onRead={handleMarkAsRead}
-                isLowVelocity={isLowVelocityFeed(article.feedUrl)}
-              />
-            ))}
+          <div ref={listRef}>
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualItem) => {
+                const article = filteredArticles[virtualItem.index];
+                return (
+                  <div
+                    key={virtualItem.key}
+                    data-index={virtualItem.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start - virtualizer.options.scrollMargin}px)`,
+                    }}
+                  >
+                    <ArticleItem
+                      article={article}
+                      isRead={readGuids.has(article.guid)}
+                      contentLines={contentLines}
+                      onRead={handleMarkAsRead}
+                      isLowVelocity={isLowVelocityFeed(article.feedUrl)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </main>
