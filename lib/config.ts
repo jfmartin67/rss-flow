@@ -32,3 +32,7 @@ export const FEED_VELOCITY_THRESHOLDS = { '24h': 1, '3d': 2, '7d': 3 } as const;
 
 // Statistics
 export const STATS_WINDOW_DAYS = 7;
+
+// Auto-refresh intervals in minutes (0 = off)
+export const AUTO_REFRESH_INTERVALS = [0, 15, 30, 60] as const;
+export type AutoRefreshInterval = typeof AUTO_REFRESH_INTERVALS[number];

@@ -15,6 +15,7 @@ import {
   SPRING_STIFFNESS_BOUNCE, SPRING_STIFFNESS_SNAP, SPRING_DAMPING_BOUNCE, SPRING_DAMPING_SNAP,
   VIRTUAL_ITEM_HEIGHT, VIRTUAL_OVERSCAN,
   FEED_VELOCITY_THRESHOLDS,
+  AUTO_REFRESH_INTERVALS, type AutoRefreshInterval,
 } from '@/lib/config';
 
 const ARC_CIRCUMFERENCE = 2 * Math.PI * ARC_RADIUS; // ≈ 56.5
@@ -32,8 +33,12 @@ export default function RiverView() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [hideReadArticles, setHideReadArticles] = useState(false);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshInterval>(0);
+  const [pendingArticles, setPendingArticles] = useState<Article[] | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const listRef = useRef<HTMLDivElement>(null);
+  const currentArticleGuidsRef = useRef<Set<string>>(new Set());
 
   // Pull-to-refresh — phase drives CSS class changes only; distance is raw DOM
   const [pullPhase, setPullPhase] = useState<'idle' | 'pulling' | 'refreshing'>('idle');
@@ -192,8 +197,43 @@ export default function RiverView() {
     };
   }, [updateDOM, runSpring]);
 
+  // Keep guid set current so background refresh can detect new articles
+  useEffect(() => {
+    currentArticleGuidsRef.current = new Set(articles.map(a => a.guid));
+  }, [articles]);
+
+  // Background auto-refresh — fetches silently and stages new articles behind a banner
+  useEffect(() => {
+    if (autoRefreshInterval === 0) return;
+    const id = setInterval(async () => {
+      const fresh = await fetchAllArticles(timeRange);
+      const newOnes = fresh.filter(a => !currentArticleGuidsRef.current.has(a.guid));
+      if (newOnes.length > 0) {
+        setPendingArticles(fresh);
+        setPendingCount(newOnes.length);
+      }
+    }, autoRefreshInterval * 60 * 1000);
+    return () => clearInterval(id);
+  }, [autoRefreshInterval, timeRange]);
+
+  const applyPendingArticles = () => {
+    if (!pendingArticles) return;
+    setArticles(pendingArticles);
+    setLastRefreshTime(new Date());
+    setPendingArticles(null);
+    setPendingCount(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cycleAutoRefresh = () => {
+    const idx = AUTO_REFRESH_INTERVALS.indexOf(autoRefreshInterval);
+    setAutoRefreshInterval(AUTO_REFRESH_INTERVALS[(idx + 1) % AUTO_REFRESH_INTERVALS.length]);
+  };
+
   const handleTimeRangeChange = async (range: TimeRange) => {
     setTimeRange(range);
+    setPendingArticles(null);
+    setPendingCount(0);
     startTransition(async () => {
       const newArticles = await fetchAllArticles(range);
       setArticles(newArticles);
@@ -217,6 +257,8 @@ export default function RiverView() {
   };
 
   const handleRefresh = async () => {
+    setPendingArticles(null);
+    setPendingCount(0);
     startTransition(async () => {
       const newArticles = await fetchAllArticles(timeRange);
       setArticles(newArticles);
@@ -460,6 +502,17 @@ export default function RiverView() {
                 <CheckCheck size={18} />
               </button>
               <button
+                onClick={cycleAutoRefresh}
+                className={`px-2 py-1.5 rounded text-xs font-semibold transition-colors ${
+                  autoRefreshInterval > 0
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                title={autoRefreshInterval === 0 ? 'Auto-refresh: off' : `Auto-refresh: every ${autoRefreshInterval}m`}
+              >
+                {autoRefreshInterval === 0 ? 'Auto' : `${autoRefreshInterval}m`}
+              </button>
+              <button
                 onClick={handleRefresh}
                 disabled={isPending}
                 className="p-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 transition-colors"
@@ -657,6 +710,17 @@ export default function RiverView() {
                 Mark All as Read
               </button>
               <button
+                onClick={cycleAutoRefresh}
+                className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  autoRefreshInterval > 0
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <RefreshCw size={18} />
+                {autoRefreshInterval === 0 ? 'Auto-refresh: off' : `Auto-refresh: ${autoRefreshInterval}m`}
+              </button>
+              <button
                 onClick={() => {
                   handleRefresh();
                   setIsMenuOpen(false);
@@ -665,7 +729,7 @@ export default function RiverView() {
                 className="px-4 py-3 text-sm font-medium rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
                 <RefreshCw size={18} className={isPending ? 'animate-spin' : ''} />
-                Refresh
+                Refresh now
               </button>
               <button
                 onClick={toggleTheme}
@@ -717,6 +781,17 @@ export default function RiverView() {
           />
         </div>
       </div>
+
+      {/* New articles banner — appears after a background auto-refresh */}
+      {pendingArticles && (
+        <div
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-orange-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-lg cursor-pointer hover:bg-orange-600 active:scale-95 transition-all flex items-center gap-2 select-none"
+          onClick={applyPendingArticles}
+        >
+          <RefreshCw size={14} />
+          {pendingCount} new article{pendingCount !== 1 ? 's' : ''} — tap to load
+        </div>
+      )}
 
       <main className="w-full">
         {articles.length === 0 ? (
