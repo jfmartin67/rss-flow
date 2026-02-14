@@ -55,6 +55,16 @@ export default function DigestPanel({ isOpen, onClose, unreadArticles }: DigestP
 
   if (!isOpen) return null;
 
+  // Render **bold** markdown as <strong> inline spans
+  const renderAbstract = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) =>
+      part.startsWith('**') && part.endsWith('**')
+        ? <strong key={i} className="font-semibold text-gray-900 dark:text-gray-100">{part.slice(2, -2)}</strong>
+        : part
+    );
+  };
+
   return createPortal(
     <>
       {/* Backdrop — dim on mobile, transparent on desktop */}
@@ -103,7 +113,7 @@ export default function DigestPanel({ isOpen, onClose, unreadArticles }: DigestP
             </div>
           ) : digest?.success && digest.abstract ? (
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {digest.abstract}
+              {renderAbstract(digest.abstract)}
             </p>
           ) : (
             <div className="text-center py-12 text-sm text-gray-500 dark:text-gray-400">

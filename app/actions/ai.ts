@@ -169,7 +169,7 @@ export async function generateUnreadDigest(
 
     const { text } = await generateText({
       model: anthropic(AI_MODEL),
-      prompt: `You are a reading digest assistant. Write a dense, informative abstract of the following unread RSS article titles — like a morning briefing paragraph. Cover the main topics and notable stories in 3-5 sentences. Be specific about subjects, names, and themes. Plain prose only, no bullet points, no headers.
+      prompt: `You are a reading digest assistant. Write a dense, informative abstract of the following unread RSS article titles — like a morning briefing paragraph. Cover the main topics and notable stories in 3-5 sentences. Be specific about subjects, names, and themes. Use **bold** (double asterisks) to highlight the most important keywords, names, and topics — typically 4-8 words across the whole abstract. No bullet points, no headers.
 
 Article titles:
 ${articlesForPrompt.map(a => `- ${a.title} (${a.feedName})`).join('\n')}`,
