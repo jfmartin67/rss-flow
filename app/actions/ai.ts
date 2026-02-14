@@ -5,6 +5,18 @@ import { anthropic } from '@ai-sdk/anthropic';
 import Redis from 'ioredis';
 import { AI_MODEL, AI_MAX_INPUT_CHARS, AI_CACHE_TTL_SECONDS, AI_MAX_QUOTES, AI_MAX_QUOTE_LENGTH } from '@/lib/config';
 
+export interface DigestTheme {
+  label: string;
+  articles: Array<{ guid: string; title: string; link: string; feedName: string }>;
+}
+
+export interface DigestResult {
+  success: boolean;
+  intro?: string;
+  themes?: DigestTheme[];
+  error?: string;
+}
+
 // Namespace prefix to match the rest of the app
 const KV_PREFIX = process.env.KV_PREFIX || 'rss-flow';
 
@@ -135,6 +147,78 @@ export async function extractKeyQuotes(content: string, articleGuid: string): Pr
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to extract quotes'
+    };
+  }
+}
+
+/**
+ * Generate a thematic digest of unread article titles using Claude.
+ * Groups articles into 2-5 topic clusters with a short intro.
+ * Not cached — unread list changes with every read action.
+ */
+export async function generateUnreadDigest(
+  articles: Array<{ guid: string; title: string; feedName: string; link: string }>
+): Promise<DigestResult> {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return { success: false, error: 'AI not configured' };
+    }
+
+    // Cap at 100 articles to keep prompt size reasonable
+    const capped = articles.slice(0, 100);
+
+    const articlesForPrompt = capped.map((a, i) => ({
+      index: i,
+      title: a.title,
+      feedName: a.feedName,
+    }));
+
+    const { text } = await generateText({
+      model: anthropic(AI_MODEL),
+      prompt: `You are a reading digest assistant. Group these ${capped.length} unread RSS article titles into 2-5 thematic clusters by topic similarity. Give each cluster a concise label (2-5 words). Write a single-sentence overview of the reading list.
+
+Return ONLY valid JSON — no markdown fences, no extra text — exactly this shape:
+{
+  "intro": "One sentence overview.",
+  "themes": [
+    { "label": "Theme Label", "indices": [0, 2, 5] }
+  ]
+}
+
+Articles:
+${JSON.stringify(articlesForPrompt)}`,
+    });
+
+    let parsed: { intro: string; themes: Array<{ label: string; indices: number[] }> };
+    try {
+      const cleaned = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      console.error('Digest JSON parse failed:', text);
+      return { success: false, error: 'Failed to parse AI response' };
+    }
+
+    const themes: DigestTheme[] = parsed.themes
+      .map(theme => ({
+        label: theme.label,
+        articles: theme.indices
+          .filter(i => i >= 0 && i < capped.length)
+          .map(i => ({
+            guid: capped[i].guid,
+            title: capped[i].title,
+            link: capped[i].link,
+            feedName: capped[i].feedName,
+          })),
+      }))
+      .filter(t => t.articles.length > 0);
+
+    return { success: true, intro: parsed.intro, themes };
+
+  } catch (error) {
+    console.error('Error generating digest:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to generate digest',
     };
   }
 }

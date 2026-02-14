@@ -5,7 +5,9 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
-import { fetchAllArticles, markAllAsRead, getReadArticlesList } from '@/app/actions/articles';
+import ArticleModal from './ArticleModal';
+import DigestPanel from './DigestPanel';
+import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead } from '@/app/actions/articles';
 import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
@@ -36,6 +38,10 @@ export default function RiverView() {
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshInterval>(0);
   const [pendingArticles, setPendingArticles] = useState<Article[] | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [isDigestOpen, setIsDigestOpen] = useState(false);
+  const [digestOpenedArticle, setDigestOpenedArticle] = useState<Article | null>(null);
+  const [digestOpenedContent, setDigestOpenedContent] = useState<string | null>(null);
+  const [isDigestArticleLoading, setIsDigestArticleLoading] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const listRef = useRef<HTMLDivElement>(null);
   const currentArticleGuidsRef = useRef<Set<string>>(new Set());
@@ -256,6 +262,18 @@ export default function RiverView() {
     });
   };
 
+  const handleOpenArticleFromDigest = async (article: Article) => {
+    setIsDigestOpen(false);
+    setDigestOpenedArticle(article);
+    setDigestOpenedContent(null);
+    setIsDigestArticleLoading(true);
+    handleMarkAsRead(article.guid);
+    markAsRead(article.guid);
+    const result = await fetchArticleContent(article.feedUrl, article.guid);
+    setDigestOpenedContent(result.success && result.content ? result.content : 'Failed to load article content.');
+    setIsDigestArticleLoading(false);
+  };
+
   const handleRefresh = async () => {
     setPendingArticles(null);
     setPendingCount(0);
@@ -369,8 +387,12 @@ export default function RiverView() {
     scrollMargin: listRef.current?.offsetTop ?? 0,
   });
 
-  // Calculate unread count for filtered articles
-  const unreadCount = filteredArticles.filter(article => !readGuids.has(article.guid)).length;
+  // Unread articles (filtered) — used for the badge count and digest panel
+  const unreadArticles = useMemo(
+    () => filteredArticles.filter(a => !readGuids.has(a.guid)),
+    [filteredArticles, readGuids]
+  );
+  const unreadCount = unreadArticles.length;
 
   // Mark all visible articles as read
   const handleMarkAllAsRead = async () => {
@@ -411,9 +433,14 @@ export default function RiverView() {
                   RSS Flow
                 </h1>
                 {unreadCount > 0 && (
-                  <span className="flex items-center justify-center min-w-[24px] h-6 px-2 bg-red-500 text-white text-xs font-bold rounded-full">
+                  <button
+                    onClick={() => setIsDigestOpen(true)}
+                    className="flex items-center justify-center min-w-[24px] h-6 px-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-full transition-colors"
+                    title="Open unread digest"
+                    aria-label={`${unreadCount} unread articles — open digest`}
+                  >
                     {unreadCount}
-                  </span>
+                  </button>
                 )}
               </div>
             </div>
@@ -601,9 +628,14 @@ export default function RiverView() {
           {/* Unread count summary */}
           <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Unread articles</span>
-            <span className={`text-sm font-bold tabular-nums px-2.5 py-0.5 rounded-full ${unreadCount > 0 ? 'bg-red-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+            <button
+              onClick={() => { setIsMenuOpen(false); if (unreadCount > 0) setIsDigestOpen(true); }}
+              disabled={unreadCount === 0}
+              className={`text-sm font-bold tabular-nums px-2.5 py-0.5 rounded-full transition-colors ${unreadCount > 0 ? 'bg-red-500 hover:bg-red-600 text-white cursor-pointer' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-default'}`}
+              title={unreadCount > 0 ? 'Open unread digest' : undefined}
+            >
               {unreadCount}
-            </span>
+            </button>
           </div>
 
           {/* Time Range Section */}
@@ -815,6 +847,25 @@ export default function RiverView() {
           <RefreshCw size={14} />
           {pendingCount} new article{pendingCount !== 1 ? 's' : ''} — tap to load
         </div>
+      )}
+
+      {/* Digest panel — triggered by tapping the unread count badge */}
+      <DigestPanel
+        isOpen={isDigestOpen}
+        onClose={() => setIsDigestOpen(false)}
+        unreadArticles={unreadArticles}
+        onOpenArticle={handleOpenArticleFromDigest}
+      />
+
+      {/* Article modal opened from within the digest */}
+      {digestOpenedArticle && (
+        <ArticleModal
+          article={digestOpenedArticle}
+          isOpen={true}
+          onClose={() => { setDigestOpenedArticle(null); setDigestOpenedContent(null); }}
+          content={digestOpenedContent}
+          isLoading={isDigestArticleLoading}
+        />
       )}
 
       <main className="w-full">
