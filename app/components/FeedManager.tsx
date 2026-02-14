@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Feed } from '@/types';
 import { addFeed, updateFeed, deleteFeed } from '@/app/actions/feeds';
-import { getFeedStatistics, type FeedStats } from '@/app/actions/articles';
+import { getAllFeedStatistics, type FeedStats } from '@/app/actions/articles';
 import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
@@ -157,12 +157,12 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
       return newSet;
     });
 
-    // Fetch stats if expanding and not already loaded
-    if (isExpanding && !feedStats.has(feedUrl)) {
+    // On first expansion, fetch stats for all feeds at once
+    if (isExpanding && feedStats.size === 0) {
       setLoadingStats(prev => new Set(prev).add(feedUrl));
       try {
-        const stats = await getFeedStatistics(feedUrl);
-        setFeedStats(prev => new Map(prev).set(feedUrl, stats));
+        const allStats = await getAllFeedStatistics();
+        setFeedStats(new Map(Object.entries(allStats)));
       } catch (error) {
         console.error('Error loading stats:', error);
       } finally {

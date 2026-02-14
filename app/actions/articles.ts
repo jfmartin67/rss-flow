@@ -81,46 +81,62 @@ export interface FeedStats {
   articlesPerDay: number;
 }
 
-export async function getFeedStatistics(feedUrl: string): Promise<FeedStats> {
-  try {
-    const allArticles = await fetchAllArticles('7d');
-    const feedArticles = allArticles.filter(article => article.feedUrl === feedUrl);
+function computeStats(feedUrl: string, feedArticles: Article[], readSet: Set<string>): FeedStats {
+  const totalArticles = feedArticles.length;
+  const readArticles = feedArticles.filter(article => readSet.has(article.guid)).length;
+  const readRate = totalArticles > 0 ? (readArticles / totalArticles) * 100 : 0;
+  const lastArticleDate = feedArticles.length > 0
+    ? feedArticles.reduce((latest, article) =>
+        article.pubDate > latest ? article.pubDate : latest,
+        feedArticles[0].pubDate
+      )
+    : null;
+  return { feedUrl, totalArticles, readArticles, readRate, lastArticleDate, articlesPerDay: totalArticles / STATS_WINDOW_DAYS };
+}
 
-    // Get read articles
-    const readGuids = await getReadArticlesList();
+// Returns stats for every feed in a single fetch — avoids N+1 when the admin
+// panel loads stats for multiple feeds.
+export async function getAllFeedStatistics(): Promise<Record<string, FeedStats>> {
+  try {
+    const [allArticles, readGuids] = await Promise.all([
+      fetchAllArticles('7d'),
+      getReadArticlesList(),
+    ]);
+
     const readSet = new Set(readGuids);
 
-    const readArticles = feedArticles.filter(article => readSet.has(article.guid)).length;
-    const totalArticles = feedArticles.length;
-    const readRate = totalArticles > 0 ? (readArticles / totalArticles) * 100 : 0;
+    // Group articles by feed URL in one pass
+    const byFeed = new Map<string, Article[]>();
+    for (const article of allArticles) {
+      const bucket = byFeed.get(article.feedUrl);
+      if (bucket) {
+        bucket.push(article);
+      } else {
+        byFeed.set(article.feedUrl, [article]);
+      }
+    }
 
-    // Calculate last article date
-    const lastArticleDate = feedArticles.length > 0
-      ? feedArticles.reduce((latest, article) =>
-          article.pubDate > latest ? article.pubDate : latest,
-          feedArticles[0].pubDate
-        )
-      : null;
+    const result: Record<string, FeedStats> = {};
+    byFeed.forEach((articles, feedUrl) => {
+      result[feedUrl] = computeStats(feedUrl, articles, readSet);
+    });
+    return result;
+  } catch (error) {
+    console.error('Error fetching all feed statistics:', error);
+    return {};
+  }
+}
 
-    const articlesPerDay = totalArticles / STATS_WINDOW_DAYS;
-
-    return {
-      feedUrl,
-      totalArticles,
-      readArticles,
-      readRate,
-      lastArticleDate,
-      articlesPerDay,
-    };
+export async function getFeedStatistics(feedUrl: string): Promise<FeedStats> {
+  try {
+    const [allArticles, readGuids] = await Promise.all([
+      fetchAllArticles('7d'),
+      getReadArticlesList(),
+    ]);
+    const feedArticles = allArticles.filter(article => article.feedUrl === feedUrl);
+    return computeStats(feedUrl, feedArticles, new Set(readGuids));
   } catch (error) {
     console.error('Error fetching feed statistics:', error);
-    return {
-      feedUrl,
-      totalArticles: 0,
-      readArticles: 0,
-      readRate: 0,
-      lastArticleDate: null,
-      articlesPerDay: 0,
-    };
+    return { feedUrl, totalArticles: 0, readArticles: 0, readRate: 0, lastArticleDate: null, articlesPerDay: 0 };
   }
 }
