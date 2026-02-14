@@ -338,6 +338,16 @@ export default function RiverView() {
     return true;
   });
 
+  // Article count per category — respects hideReadArticles, used for filter pill badges
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    articles.forEach(article => {
+      if (hideReadArticles && readGuids.has(article.guid)) return;
+      counts.set(article.category, (counts.get(article.category) || 0) + 1);
+    });
+    return counts;
+  }, [articles, hideReadArticles, readGuids]);
+
   // Memoized feed velocities — computed once per articles/timeRange change, not per item
   const feedVelocities = useMemo(() => {
     const counts = new Map<string, number>();
@@ -562,7 +572,7 @@ export default function RiverView() {
                   key={category}
                   onClick={() => handleCategoryToggle(category)}
                   className={`
-                    px-3 py-1.5 rounded-full text-xs font-bold transition-all
+                    px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5
                     ${selectedCategories.has(category)
                       ? 'text-white shadow-md'
                       : 'border-2'
@@ -575,6 +585,9 @@ export default function RiverView() {
                   }}
                 >
                   {category}
+                  <span className={`text-[10px] font-semibold tabular-nums ${selectedCategories.has(category) ? 'opacity-80' : 'opacity-60'}`}>
+                    {categoryCounts.get(category) ?? 0}
+                  </span>
                 </button>
               ))}
             </div>
@@ -585,6 +598,14 @@ export default function RiverView() {
       {/* Hamburger Menu */}
       <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)}>
         <div className="space-y-6">
+          {/* Unread count summary */}
+          <div className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Unread articles</span>
+            <span className={`text-sm font-bold tabular-nums px-2.5 py-0.5 rounded-full ${unreadCount > 0 ? 'bg-red-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+              {unreadCount}
+            </span>
+          </div>
+
           {/* Time Range Section */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -660,7 +681,7 @@ export default function RiverView() {
                   key={category}
                   onClick={() => handleCategoryToggle(category)}
                   className={`
-                    px-3 py-2 rounded-lg text-sm font-bold transition-all
+                    px-3 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5
                     ${selectedCategories.has(category)
                       ? 'text-white'
                       : 'border-2'
@@ -673,6 +694,9 @@ export default function RiverView() {
                   }}
                 >
                   {category}
+                  <span className={`text-xs font-semibold tabular-nums ${selectedCategories.has(category) ? 'opacity-80' : 'opacity-60'}`}>
+                    {categoryCounts.get(category) ?? 0}
+                  </span>
                 </button>
               ))}
             </div>
@@ -710,7 +734,7 @@ export default function RiverView() {
                 Mark All as Read
               </button>
               <button
-                onClick={cycleAutoRefresh}
+                onClick={() => { cycleAutoRefresh(); setIsMenuOpen(false); }}
                 className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
                   autoRefreshInterval > 0
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
@@ -732,7 +756,7 @@ export default function RiverView() {
                 Refresh now
               </button>
               <button
-                onClick={toggleTheme}
+                onClick={() => { toggleTheme(); setIsMenuOpen(false); }}
                 className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
               >
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
