@@ -23,10 +23,13 @@ redis.connect().catch(err => {
 export async function getFeeds(): Promise<Feed[]> {
   try {
     const feedsJson = await redis.get(FEEDS_KEY);
-    if (!feedsJson) {
+    if (!feedsJson) return [];
+    try {
+      return JSON.parse(feedsJson);
+    } catch {
+      console.error('Feeds data in Redis is corrupted (invalid JSON) — returning empty list');
       return [];
     }
-    return JSON.parse(feedsJson);
   } catch (error) {
     console.error('Error getting feeds:', error);
     return [];
