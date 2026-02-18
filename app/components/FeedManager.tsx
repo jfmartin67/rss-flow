@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Feed } from '@/types';
-import { addFeed, updateFeed, deleteFeed } from '@/app/actions/feeds';
+import { addFeed, updateFeed, deleteFeed, getAllFeeds } from '@/app/actions/feeds';
 import { getAllFeedStatistics, type FeedStats } from '@/app/actions/articles';
 import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
@@ -86,8 +86,8 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
         setUrl('');
         setCategory('');
         setColor(DEFAULT_COLORS[0]);
-        // Refresh the page to get updated feeds
-        window.location.reload();
+        const updatedFeeds = await getAllFeeds();
+        setFeeds(updatedFeeds);
       } else {
         setError(result.error || 'Failed to add feed');
       }
