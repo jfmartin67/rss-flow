@@ -22,7 +22,7 @@ export async function GET() {
   }
 
   // Sort categories alphabetically, feeds within each category by name
-  const sortedCategories = [...byCategory.keys()].sort((a, b) =>
+  const sortedCategories = Array.from(byCategory.keys()).sort((a, b) =>
     a.toLowerCase().localeCompare(b.toLowerCase())
   );
 
