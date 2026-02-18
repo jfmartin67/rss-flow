@@ -8,7 +8,7 @@ import ArticleItem from './ArticleItem';
 import ArticleModal from './ArticleModal';
 import DigestPanel from './DigestPanel';
 import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 import LoadingSkeleton from './LoadingSkeleton';
@@ -794,6 +794,15 @@ export default function RiverView() {
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                 {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
               </button>
+              <a
+                href="/api/export/opml"
+                download="rss-flow-subscriptions.opml"
+                onClick={() => setIsMenuOpen(false)}
+                className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Download size={18} />
+                Export OPML
+              </a>
               <a
                 href="/admin"
                 className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
