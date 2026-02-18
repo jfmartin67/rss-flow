@@ -565,6 +565,14 @@ export default function RiverView() {
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
               </button>
               <a
+                href="/api/export/opml"
+                download="rss-flow-subscriptions.opml"
+                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title="Export OPML"
+              >
+                <Download size={18} />
+              </a>
+              <a
                 href="/admin"
                 className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                 title="Admin"
