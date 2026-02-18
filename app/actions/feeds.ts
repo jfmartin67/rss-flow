@@ -7,6 +7,12 @@ import { fetchFeedMetadata } from '@/lib/rss';
 
 export async function addFeed(url: string, category: string, color: string): Promise<{ success: boolean; error?: string }> {
   try {
+    // Reject duplicate URLs before doing any network work
+    const existingFeeds = await getFeeds();
+    if (existingFeeds.some(f => f.url === url)) {
+      return { success: false, error: 'A feed with this URL already exists' };
+    }
+
     // Fetch feed metadata to get the feed name
     const metadata = await fetchFeedMetadata(url);
 
