@@ -449,51 +449,39 @@ export default function RiverView() {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-4 flex-1 justify-center">
-              <div className="flex flex-col items-center gap-1">
-                <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                  {(['24h', '3d', '7d'] as TimeRange[]).map((range) => (
-                    <button
-                      key={range}
-                      onClick={() => handleTimeRangeChange(range)}
-                      className={`
-                        px-4 py-2 text-sm font-medium transition-colors
-                        ${timeRange === range
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }
-                      `}
-                    >
-                      {range === '24h' ? '24 Hours' : range === '3d' ? '3 Days' : '7 Days'}
-                    </button>
-                  ))}
-                </div>
-                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">
-                  Time Range
-                </div>
+            <div className="hidden md:flex items-center gap-3 flex-1 justify-center">
+              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                {(['24h', '3d', '7d'] as TimeRange[]).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => handleTimeRangeChange(range)}
+                    title={range === '24h' ? '24 Hours' : range === '3d' ? '3 Days' : '7 Days'}
+                    className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      timeRange === range
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {range}
+                  </button>
+                ))}
               </div>
 
-              <div className="flex flex-col items-center gap-1">
-                <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                  {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
-                    <button
-                      key={lines}
-                      onClick={() => handleContentLinesChange(lines)}
-                      className={`
-                        px-4 py-2 text-sm font-medium transition-colors
-                        ${contentLines === lines
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }
-                      `}
-                    >
-                      {lines === 0 ? 'None' : lines}
-                    </button>
-                  ))}
-                </div>
-                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">
-                  Content Preview
-                </div>
+              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
+                  <button
+                    key={lines}
+                    onClick={() => handleContentLinesChange(lines)}
+                    title={lines === 0 ? 'No preview' : `${lines} line${lines > 1 ? 's' : ''} preview`}
+                    className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      contentLines === lines
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {lines === 0 ? '—' : lines}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -509,8 +497,9 @@ export default function RiverView() {
             </button>
 
             <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-              <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
-                Last updated: {formatRefreshTime(lastRefreshTime)}
+              <div className="w-px h-5 bg-gray-300 dark:bg-gray-600" />
+              <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                {formatRefreshTime(lastRefreshTime)}
               </span>
               <button
                 onClick={() => setHideReadArticles(!hideReadArticles)}
