@@ -66,7 +66,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         setSummary(result.summary);
       } else {
         setSummaryError(true);
-        console.log('Summary generation skipped or failed:', result.error);
       }
 
       setSummaryLoading(false);
@@ -91,7 +90,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
         setQuotes(result.quotes);
       } else {
         setQuotesError(true);
-        console.log('Quote extraction skipped or failed:', result.error);
       }
 
       setQuotesLoading(false);
@@ -164,12 +162,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       // Get all rectangles for the selection (handles multi-line selections)
       const rects = range.getClientRects();
 
-      console.log('Creating highlight for', rects.length, 'rectangles');
-
-      if (rects.length === 0) {
-        console.warn('No rectangles found for selection');
-        return;
-      }
+      if (rects.length === 0) return;
 
       // Create individual highlight divs for each rectangle (not in a container)
       // This ensures they appear above the modal
@@ -177,7 +170,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
       for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
-        console.log('Rect', i, ':', rect.left, rect.top, rect.width, rect.height);
 
         const highlightRect = document.createElement('div');
         highlightRect.setAttribute('data-selection-highlight', 'true');
@@ -200,7 +192,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       // Store reference to first highlight (we'll use querySelectorAll to remove all)
       if (highlights.length > 0) {
         highlightSpanRef.current = highlights[0] as any;
-        console.log('Highlight created and added to body:', highlights.length, 'elements');
       }
     };
 
@@ -209,7 +200,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       const highlights = document.querySelectorAll('[data-selection-highlight]');
       highlights.forEach(h => h.remove());
       highlightSpanRef.current = null;
-      console.log('Removed', highlights.length, 'highlight elements');
     };
 
     // Prevent right-click mousedown from clearing selection
@@ -228,7 +218,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           );
 
           if (isWithinContent) {
-            console.log('Right-click mousedown: preventing default and stopping propagation');
             // Prevent mousedown from clearing the selection
             e.preventDefault();
             // Stop event from bubbling to document listener
@@ -321,21 +310,13 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     // Hide menu when clicking/tapping elsewhere
     const handleClickOutside = (e: Event) => {
       // Ignore right-clicks completely (they're handled by contextmenu event)
-      if (e instanceof MouseEvent && e.button === 2) {
-        console.log('Ignoring right-click in handleClickOutside');
-        return;
-      }
+      if (e instanceof MouseEvent && e.button === 2) return;
 
       // Don't hide if clicking on the menu itself
       if (e.target instanceof Node) {
         const menuElement = document.querySelector('[data-context-menu]');
-        if (menuElement?.contains(e.target)) {
-          console.log('Click on menu, ignoring');
-          return;
-        }
+        if (menuElement?.contains(e.target)) return;
       }
-
-      console.log('handleClickOutside: hiding menu and removing highlight');
 
       // Clear any pending timeout
       if (selectionTimeoutRef.current) {
