@@ -108,11 +108,11 @@ function computeStats(feedUrl: string, feedArticles: Article[], readSet: Set<str
 // panel loads stats for multiple feeds.
 export async function getAllFeedStatistics(): Promise<Record<string, FeedStats>> {
   try {
-    const [result, readGuids] = await Promise.all([
+    const [fetchResult, readGuids] = await Promise.all([
       fetchAllArticles('7d'),
       getReadArticlesList(),
     ]);
-    const allArticles = result.articles;
+    const allArticles = fetchResult.articles;
 
     const readSet = new Set(readGuids);
 
