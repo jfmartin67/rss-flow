@@ -68,6 +68,17 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
       return;
     }
 
+    try {
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        setError('URL must use http:// or https://');
+        return;
+      }
+    } catch {
+      setError('Please enter a valid URL');
+      return;
+    }
+
     startTransition(async () => {
       const result = await addFeed(url, category, color);
 
