@@ -6,12 +6,12 @@ import { fetchAllFeeds, fetchArticleContent as rssFetchArticleContent } from '@/
 import { filterByTimeRange, interleaveArticles } from '@/lib/utils';
 import { FEED_MAX_CONSECUTIVE, STATS_WINDOW_DAYS } from '@/lib/config';
 
-export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<Article[]> {
+export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<{ articles: Article[]; error?: string }> {
   try {
     const feeds = await getFeeds();
 
     if (feeds.length === 0) {
-      return [];
+      return { articles: [] };
     }
 
     const articles = await fetchAllFeeds(feeds);
@@ -22,10 +22,10 @@ export async function fetchAllArticles(timeRange: TimeRange = '24h'): Promise<Ar
     // Apply smart interleaving to balance feed velocity
     const interleavedArticles = interleaveArticles(filteredArticles, FEED_MAX_CONSECUTIVE);
 
-    return interleavedArticles;
+    return { articles: interleavedArticles };
   } catch (error) {
     console.error('Error fetching articles:', error);
-    return [];
+    return { articles: [], error: 'Failed to load articles. Check your connection and try refreshing.' };
   }
 }
 
@@ -108,10 +108,11 @@ function computeStats(feedUrl: string, feedArticles: Article[], readSet: Set<str
 // panel loads stats for multiple feeds.
 export async function getAllFeedStatistics(): Promise<Record<string, FeedStats>> {
   try {
-    const [allArticles, readGuids] = await Promise.all([
+    const [result, readGuids] = await Promise.all([
       fetchAllArticles('7d'),
       getReadArticlesList(),
     ]);
+    const allArticles = result.articles;
 
     const readSet = new Set(readGuids);
 
@@ -139,11 +140,11 @@ export async function getAllFeedStatistics(): Promise<Record<string, FeedStats>>
 
 export async function getFeedStatistics(feedUrl: string): Promise<FeedStats> {
   try {
-    const [allArticles, readGuids] = await Promise.all([
+    const [result, readGuids] = await Promise.all([
       fetchAllArticles('7d'),
       getReadArticlesList(),
     ]);
-    const feedArticles = allArticles.filter(article => article.feedUrl === feedUrl);
+    const feedArticles = result.articles.filter(article => article.feedUrl === feedUrl);
     return computeStats(feedUrl, feedArticles, new Set(readGuids));
   } catch (error) {
     console.error('Error fetching feed statistics:', error);

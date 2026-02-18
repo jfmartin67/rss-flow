@@ -38,6 +38,7 @@ export default function RiverView() {
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshInterval>(0);
   const [pendingArticles, setPendingArticles] = useState<Article[] | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isDigestOpen, setIsDigestOpen] = useState(false);
   const [digestOpenedArticle, setDigestOpenedArticle] = useState<Article | null>(null);
   const [digestOpenedContent, setDigestOpenedContent] = useState<string | null>(null);
@@ -122,8 +123,9 @@ export default function RiverView() {
 
   // Fetch initial data client-side so the loading skeleton is always visible
   useEffect(() => {
-    Promise.all([fetchAllArticles('24h'), getReadArticlesList()]).then(([arts, guids]) => {
-      setArticles(arts);
+    Promise.all([fetchAllArticles('24h'), getReadArticlesList()]).then(([result, guids]) => {
+      setArticles(result.articles);
+      setFetchError(result.error ?? null);
       setReadGuids(new Set(guids));
       setIsInitialLoading(false);
     });
@@ -212,7 +214,7 @@ export default function RiverView() {
   useEffect(() => {
     if (autoRefreshInterval === 0) return;
     const id = setInterval(async () => {
-      const fresh = await fetchAllArticles(timeRange);
+      const { articles: fresh } = await fetchAllArticles(timeRange);
       const newOnes = fresh.filter(a => !currentArticleGuidsRef.current.has(a.guid));
       if (newOnes.length > 0) {
         setPendingArticles(fresh);
@@ -241,8 +243,9 @@ export default function RiverView() {
     setPendingArticles(null);
     setPendingCount(0);
     startTransition(async () => {
-      const newArticles = await fetchAllArticles(range);
-      setArticles(newArticles);
+      const result = await fetchAllArticles(range);
+      setArticles(result.articles);
+      setFetchError(result.error ?? null);
     });
   };
 
@@ -278,8 +281,9 @@ export default function RiverView() {
     setPendingArticles(null);
     setPendingCount(0);
     startTransition(async () => {
-      const newArticles = await fetchAllArticles(timeRange);
-      setArticles(newArticles);
+      const result = await fetchAllArticles(timeRange);
+      setArticles(result.articles);
+      setFetchError(result.error ?? null);
       setLastRefreshTime(new Date());
     });
   };
@@ -882,6 +886,12 @@ export default function RiverView() {
           content={digestOpenedContent}
           isLoading={isDigestArticleLoading}
         />
+      )}
+
+      {fetchError && (
+        <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm text-center">
+          {fetchError}
+        </div>
       )}
 
       <main className="w-full">
