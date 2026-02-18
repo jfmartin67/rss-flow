@@ -24,7 +24,8 @@ A minimal, web-based RSS reader with "river of news" style interface built with 
 - **Feed Management**: Admin interface for adding, editing, and removing feeds
 - **Editable Feed Metadata**: Change feed names, categories, and tag colors
 - **Export OPML**: Download all feed subscriptions as a standard OPML file
-- **Consistent Alignment**: Fixed-width source column keeps article titles aligned
+- **Aligned Article Columns**: Fixed-width columns for category, timestamp, and feed name keep article titles consistently aligned
+- **Compact Desktop Toolbar**: Segmented controls for time range and content preview sit inline with the icon buttons — no text labels, tighter padding, visual divider separating controls from actions
 
 ## Tech Stack
 
@@ -116,8 +117,9 @@ npm run dev
 - Toggle **Hide Read Articles** to focus on unread items only
 - Tap the red unread count badge next to the title to open the AI digest panel
 - On mobile: pull down to refresh; use the hamburger menu for all controls
-- On desktop: all controls are inline in the header
+- On desktop: all controls are inline in the header — time range and content preview as compact segmented controls, followed by icon buttons
 - If auto-refresh is enabled, new articles appear as a floating banner — tap to load them
+- If articles fail to load (network or database error), a red banner is shown under the header instead of an empty state
 
 ### AI Features
 
@@ -129,13 +131,13 @@ AI features require an `ANTHROPIC_API_KEY` environment variable.
 
 ### Exporting Feeds
 
-- Open the hamburger menu (mobile) and tap **Export OPML** to download all your feed subscriptions as a standard `.opml` file, grouped by category
+- Click the **Download** icon in the desktop toolbar, or open the hamburger menu on mobile, to download all your feed subscriptions as a standard `.opml` file grouped by category
 - The OPML file is compatible with all major RSS readers
 
 ### Admin Panel
 
 - Access at `/admin`
-- Add new RSS feeds with custom categories and colors
+- Add new RSS feeds with custom categories and colors — URL format is validated before submission and duplicate URLs are rejected
 - Edit feed names, categories, and tag colors
 - Delete existing feeds
 - View all configured feeds with color-coded tags
