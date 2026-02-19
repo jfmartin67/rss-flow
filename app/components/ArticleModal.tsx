@@ -446,10 +446,10 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const handleSendSummaryToMicroblog = () => {
     if (!summary) return;
 
-    // Format summary as markdown with citation at the beginning
+    // Format summary as markdown with citation, then blank lines for the user's own comment
     const lines = summary.split('\n');
     const quotedLines = lines.map(line => `> ${line}`).join('\n');
-    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}`;
+    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}\n\n`;
 
     // URL encode the markdown and open in new tab
     const encodedMarkdown = encodeURIComponent(markdown);
