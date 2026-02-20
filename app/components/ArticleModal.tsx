@@ -557,17 +557,17 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           ) : content ? (
             <>
               {/* AI Summary */}
-              {(summaryLoading || summary) && !summaryError && (
+              {(summaryLoading || summary || summaryError) && (
                 <div
-                  className={`mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 rounded-r-lg ${summary ? 'cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors' : ''}`}
+                  className={`mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border-l-4 ${summaryError ? 'border-orange-300 dark:border-orange-700' : 'border-orange-500'} rounded-r-lg ${summary ? 'cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors' : ''}`}
                   onClick={summary ? handleSendSummaryToMicroblog : undefined}
                   title={summary ? "Click to send summary to microblog" : undefined}
                 >
                   <div className="flex items-start gap-2">
-                    <Sparkles className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                    <Sparkles className={`w-5 h-5 ${summaryError ? 'text-orange-300 dark:text-orange-600' : 'text-orange-500'} flex-shrink-0 mt-0.5`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">
+                        <span className={`text-xs font-semibold ${summaryError ? 'text-orange-400 dark:text-orange-500' : 'text-orange-700 dark:text-orange-400'}`}>
                           AI Summary
                         </span>
                         {summary && (
@@ -579,6 +579,10 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
                           <Loader2 className="w-4 h-4 animate-spin" />
                           <span>Generating summary...</span>
                         </div>
+                      ) : summaryError ? (
+                        <p className="text-xs text-orange-400 dark:text-orange-500">
+                          Summary unavailable
+                        </p>
                       ) : (
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           {summary}
@@ -590,11 +594,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
               )}
 
               {/* Key Quotes */}
-              {(quotesLoading || (quotes && quotes.length > 0)) && !quotesError && (
+              {(quotesLoading || (quotes && quotes.length > 0) || quotesError) && (
                 <div className="mb-6 space-y-3">
                   <div className="flex items-center gap-2 px-2">
-                    <Quote className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">
+                    <Quote className={`w-4 h-4 ${quotesError ? 'text-blue-300 dark:text-blue-600' : 'text-blue-500'}`} />
+                    <span className={`text-xs font-semibold ${quotesError ? 'text-blue-400 dark:text-blue-500' : 'text-blue-700 dark:text-blue-400'}`}>
                       Key Quotes
                     </span>
                   </div>
@@ -603,6 +607,10 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Extracting key quotes...</span>
                     </div>
+                  ) : quotesError ? (
+                    <p className="text-xs text-blue-400 dark:text-blue-500 px-2">
+                      Quotes unavailable
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {quotes?.map((quote, index) => (

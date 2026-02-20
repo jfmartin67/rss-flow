@@ -3,7 +3,7 @@
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import Redis from 'ioredis';
-import { AI_MODEL, AI_MAX_INPUT_CHARS, AI_CACHE_TTL_SECONDS, AI_MAX_QUOTES, AI_MAX_QUOTE_LENGTH } from '@/lib/config';
+import { AI_MODEL, AI_MAX_INPUT_CHARS, AI_CACHE_TTL_SECONDS, AI_MAX_QUOTES, AI_MAX_QUOTE_LENGTH, AI_TIMEOUT_MS } from '@/lib/config';
 
 export interface DigestResult {
   success: boolean;
@@ -31,6 +31,9 @@ redis.connect().catch(err => {
  * Summaries are cached in Redis for 90 days to minimize API calls
  */
 export async function generateSummary(content: string, articleGuid: string): Promise<{ success: boolean; summary?: string; error?: string }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
   try {
     // Check cache first
     const cacheKey = `${KV_PREFIX}:summary:${articleGuid}`;
@@ -61,6 +64,7 @@ export async function generateSummary(content: string, articleGuid: string): Pro
     const { text } = await generateText({
       model: anthropic(AI_MODEL), // Fast and cost-effective
       prompt: `Summarize the following article in 2-3 concise sentences. Focus on the main points and key takeaways:\n\n${truncatedContent}`,
+      abortSignal: controller.signal,
     });
 
     // Cache for 90 days (Redis EX is in seconds)
@@ -70,11 +74,17 @@ export async function generateSummary(content: string, articleGuid: string): Pro
     return { success: true, summary: text };
 
   } catch (error) {
+    if (controller.signal.aborted) {
+      console.warn(`Summary generation timed out for ${articleGuid}`);
+      return { success: false, error: 'Summary generation timed out' };
+    }
     console.error('Error generating summary:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to generate summary'
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -83,6 +93,9 @@ export async function generateSummary(content: string, articleGuid: string): Pro
  * Quotes are cached in Redis for 90 days to minimize API calls
  */
 export async function extractKeyQuotes(content: string, articleGuid: string): Promise<{ success: boolean; quotes?: string[]; error?: string }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
   try {
     // Check cache first
     const cacheKey = `${KV_PREFIX}:quotes:${articleGuid}`;
@@ -118,6 +131,7 @@ export async function extractKeyQuotes(content: string, articleGuid: string): Pr
     const { text } = await generateText({
       model: anthropic(AI_MODEL),
       prompt: `Extract 2-3 of the most important, quotable, or insightful sentences from the following article. These should be complete sentences that stand alone and capture key insights, arguments, or facts. Return ONLY the quotes, one per line, without numbering or additional commentary:\n\n${truncatedContent}`,
+      abortSignal: controller.signal,
     });
 
     // Parse quotes (split by newlines, filter empty)
@@ -137,11 +151,17 @@ export async function extractKeyQuotes(content: string, articleGuid: string): Pr
     return { success: true, quotes };
 
   } catch (error) {
+    if (controller.signal.aborted) {
+      console.warn(`Quote extraction timed out for ${articleGuid}`);
+      return { success: false, error: 'Quote extraction timed out' };
+    }
     console.error('Error extracting quotes:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to extract quotes'
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

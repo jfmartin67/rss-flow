@@ -25,6 +25,7 @@ export const AI_MAX_INPUT_CHARS = 15000;           // max chars sent to Claude (
 export const AI_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 days
 export const AI_MAX_QUOTES = 3;
 export const AI_MAX_QUOTE_LENGTH = 500;
+export const AI_TIMEOUT_MS = 30000;                // 30 s before aborting an AI request
 
 // Feed display & interleaving
 export const FEED_MAX_CONSECUTIVE = 2;             // max consecutive articles from the same feed
