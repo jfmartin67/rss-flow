@@ -78,6 +78,11 @@ export async function generateSummary(content: string, articleGuid: string): Pro
       console.warn(`Summary generation timed out for ${articleGuid}`);
       return { success: false, error: 'Summary generation timed out' };
     }
+    // AI_APICallError and similar SDK errors carry a statusCode — log cleanly without stack trace
+    if (error instanceof Error && 'statusCode' in error) {
+      console.warn(`AI API error generating summary for ${articleGuid} (${(error as any).statusCode}): ${error.message}`);
+      return { success: false, error: 'AI service unavailable' };
+    }
     console.error('Error generating summary:', error);
     return {
       success: false,
@@ -154,6 +159,11 @@ export async function extractKeyQuotes(content: string, articleGuid: string): Pr
     if (controller.signal.aborted) {
       console.warn(`Quote extraction timed out for ${articleGuid}`);
       return { success: false, error: 'Quote extraction timed out' };
+    }
+    // AI_APICallError and similar SDK errors carry a statusCode — log cleanly without stack trace
+    if (error instanceof Error && 'statusCode' in error) {
+      console.warn(`AI API error extracting quotes for ${articleGuid} (${(error as any).statusCode}): ${error.message}`);
+      return { success: false, error: 'AI service unavailable' };
     }
     console.error('Error extracting quotes:', error);
     return {
