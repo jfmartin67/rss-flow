@@ -506,6 +506,24 @@ export default function RiverView() {
                   </button>
                 ))}
               </div>
+
+              {availableViews.length > 1 && (
+                <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                  {(['All', ...availableViews]).map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => handleViewChange(v)}
+                      className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        selectedView === v
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Hamburger button - mobile only */}
@@ -598,26 +616,6 @@ export default function RiverView() {
             </div>
           </div>
 
-          {/* View switcher — shown only when feeds span multiple views */}
-          {availableViews.length > 1 && (
-            <div className="hidden md:flex items-center justify-center mt-3">
-              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                {(['All', ...availableViews]).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => handleViewChange(v)}
-                    className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      selectedView === v
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </header>
 
