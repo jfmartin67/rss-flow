@@ -31,6 +31,26 @@ const DEFAULT_COLORS = [
   '#ec4899', // pink
 ];
 
+const COLOR_NAMES: Record<string, string> = {
+  '#4b5563': 'Dark Grey',
+  '#ef4444': 'Red',
+  '#f97316': 'Orange',
+  '#f59e0b': 'Amber',
+  '#eab308': 'Yellow',
+  '#84cc16': 'Lime',
+  '#22c55e': 'Green',
+  '#10b981': 'Emerald',
+  '#14b8a6': 'Teal',
+  '#06b6d4': 'Cyan',
+  '#0ea5e9': 'Sky',
+  '#3b82f6': 'Blue',
+  '#6366f1': 'Indigo',
+  '#8b5cf6': 'Violet',
+  '#a855f7': 'Purple',
+  '#d946ef': 'Fuchsia',
+  '#ec4899': 'Pink',
+};
+
 // Sort feeds by category alphabetically
 const sortFeedsByCategory = (feedsToSort: Feed[]): Feed[] => {
   return [...feedsToSort].sort((a, b) => {
@@ -336,20 +356,30 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category Color
               </label>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap mb-3">
                 {DEFAULT_COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
                       color === c ? 'border-gray-900 dark:border-gray-100 scale-110' : 'border-transparent'
                     }`}
                     style={{ backgroundColor: c }}
-                    title={c}
-                  />
+                    title={COLOR_NAMES[c] ?? c}
+                  >
+                    {color === c && <Check size={14} className="text-white drop-shadow" />}
+                  </button>
                 ))}
               </div>
+              {category && (
+                <span
+                  className="px-2 py-1 rounded-full text-xs font-bold"
+                  style={{ backgroundColor: `${color}20`, color }}
+                >
+                  {category}
+                </span>
+              )}
             </div>
 
             <button
@@ -493,20 +523,30 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Tag Color
                           </label>
-                          <div className="flex gap-1 flex-wrap">
+                          <div className="flex gap-2 flex-wrap mb-2">
                             {DEFAULT_COLORS.map((c) => (
                               <button
                                 key={c}
                                 type="button"
                                 onClick={() => setEditColor(c)}
-                                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                                className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
                                   editColor === c ? 'border-gray-900 dark:border-gray-100 scale-110' : 'border-transparent'
                                 }`}
                                 style={{ backgroundColor: c }}
-                                title={c}
-                              />
+                                title={COLOR_NAMES[c] ?? c}
+                              >
+                                {editColor === c && <Check size={14} className="text-white drop-shadow" />}
+                              </button>
                             ))}
                           </div>
+                          {editCategory && (
+                            <span
+                              className="px-2 py-1 rounded-full text-xs font-bold"
+                              style={{ backgroundColor: `${editColor}20`, color: editColor }}
+                            >
+                              {editCategory}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ) : (
