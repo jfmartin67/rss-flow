@@ -63,6 +63,12 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [renamingView, setRenamingView] = useState<string | null>(null);
   const [renameViewValue, setRenameViewValue] = useState('');
 
+  const existingCategories = useMemo(() => {
+    const cats = new Set<string>();
+    feeds.forEach(f => { if (f.category) cats.add(f.category); });
+    return Array.from(cats).sort();
+  }, [feeds]);
+
   const existingViews = useMemo(() => {
     const views = new Set<string>(['Default']);
     feeds.forEach(f => { if (f.view) views.add(f.view); });
@@ -296,12 +302,16 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
               <input
                 type="text"
                 id="category"
+                list="category-suggestions"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g., Tech, News, Sports"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               />
+              <datalist id="category-suggestions">
+                {existingCategories.map(c => <option key={c} value={c} />)}
+              </datalist>
             </div>
 
             <div>
@@ -459,11 +469,15 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                         />
                         <input
                           type="text"
+                          list="edit-category-suggestions"
                           value={editCategory}
                           onChange={(e) => setEditCategory(e.target.value)}
                           className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
                           placeholder="Category"
                         />
+                        <datalist id="edit-category-suggestions">
+                          {existingCategories.map(c => <option key={c} value={c} />)}
+                        </datalist>
                         <input
                           type="text"
                           list="edit-view-suggestions"
