@@ -50,53 +50,61 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     };
   }, [isOpen, onClose]);
 
-  // Fetch AI summary when content is available
+  // Fetch AI summary when content is available.
+  // Deps intentionally omit summaryLoading: including it caused the effect to re-run
+  // on every loading-state change, producing an infinite retry loop on error.
+  // try/finally guarantees the spinner is always cleared even if the server action throws.
   useEffect(() => {
-    if (!isOpen || !content || summary !== null || summaryLoading) {
+    if (!isOpen || !content || summary !== null) {
       return;
     }
 
     const fetchSummary = async () => {
       setSummaryLoading(true);
       setSummaryError(false);
-
-      const result = await generateSummary(content, article.guid);
-
-      if (result.success && result.summary) {
-        setSummary(result.summary);
-      } else {
+      try {
+        const result = await generateSummary(content, article.guid);
+        if (result.success && result.summary) {
+          setSummary(result.summary);
+        } else {
+          setSummaryError(true);
+        }
+      } catch {
         setSummaryError(true);
+      } finally {
+        setSummaryLoading(false);
       }
-
-      setSummaryLoading(false);
     };
 
     fetchSummary();
-  }, [isOpen, content, article.guid, summary, summaryLoading]);
+  }, [isOpen, content, article.guid, summary]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch key quotes when content is available
+  // Fetch key quotes when content is available.
+  // Same rationale as above: quotesLoading omitted from deps to prevent retry loops.
   useEffect(() => {
-    if (!isOpen || !content || quotes !== null || quotesLoading) {
+    if (!isOpen || !content || quotes !== null) {
       return;
     }
 
     const fetchQuotes = async () => {
       setQuotesLoading(true);
       setQuotesError(false);
-
-      const result = await extractKeyQuotes(content, article.guid);
-
-      if (result.success && result.quotes) {
-        setQuotes(result.quotes);
-      } else {
+      try {
+        const result = await extractKeyQuotes(content, article.guid);
+        if (result.success && result.quotes) {
+          setQuotes(result.quotes);
+        } else {
+          setQuotesError(true);
+        }
+      } catch {
         setQuotesError(true);
+      } finally {
+        setQuotesLoading(false);
       }
-
-      setQuotesLoading(false);
     };
 
     fetchQuotes();
-  }, [isOpen, content, article.guid, quotes, quotesLoading]);
+  }, [isOpen, content, article.guid, quotes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset summary and quotes when modal closes
   useEffect(() => {
