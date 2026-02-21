@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { Feed } from '@/types';
-import { getFeeds, addFeed as dbAddFeed, updateFeed as dbUpdateFeed, deleteFeed as dbDeleteFeed } from '@/lib/db';
+import { getFeeds, saveFeeds, addFeed as dbAddFeed, updateFeed as dbUpdateFeed, deleteFeed as dbDeleteFeed } from '@/lib/db';
 import { fetchFeedMetadata } from '@/lib/rss';
 
 export async function addFeed(url: string, category: string, color: string, view: string = 'Default'): Promise<{ success: boolean; error?: string }> {
@@ -68,6 +68,24 @@ export async function deleteFeed(id: string): Promise<{ success: boolean; error?
       success: false,
       error: 'Failed to delete feed',
     };
+  }
+}
+
+export async function renameView(oldName: string, newName: string): Promise<{ success: boolean; error?: string }> {
+  const trimmed = newName.trim();
+  if (!trimmed) {
+    return { success: false, error: 'View name cannot be empty' };
+  }
+  try {
+    const feeds = await getFeeds();
+    const updated = feeds.map(f => f.view === oldName ? { ...f, view: trimmed } : f);
+    await saveFeeds(updated);
+    revalidatePath('/');
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error('Error renaming view:', error);
+    return { success: false, error: 'Failed to rename view' };
   }
 }
 

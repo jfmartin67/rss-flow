@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react';
 import { Feed } from '@/types';
-import { addFeed, updateFeed, deleteFeed, getAllFeeds } from '@/app/actions/feeds';
+import { addFeed, updateFeed, deleteFeed, getAllFeeds, renameView } from '@/app/actions/feeds';
 import { getAllFeedStatistics, type FeedStats } from '@/app/actions/articles';
 import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
@@ -60,11 +60,22 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [expandedStats, setExpandedStats] = useState<Set<string>>(new Set());
   const [feedStats, setFeedStats] = useState<Map<string, FeedStats>>(new Map());
   const [loadingStats, setLoadingStats] = useState<Set<string>>(new Set());
+  const [renamingView, setRenamingView] = useState<string | null>(null);
+  const [renameViewValue, setRenameViewValue] = useState('');
 
   const existingViews = useMemo(() => {
     const views = new Set<string>(['Default']);
     feeds.forEach(f => { if (f.view) views.add(f.view); });
     return Array.from(views).sort();
+  }, [feeds]);
+
+  const viewFeedCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    feeds.forEach(f => {
+      const v = f.view || 'Default';
+      counts.set(v, (counts.get(v) || 0) + 1);
+    });
+    return counts;
   }, [feeds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,6 +210,20 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
     }
   };
 
+  const handleSaveRenameView = async (oldName: string) => {
+    if (!renameViewValue.trim()) return;
+    startTransition(async () => {
+      const result = await renameView(oldName, renameViewValue.trim());
+      if (result.success) {
+        setFeeds(prev => prev.map(f => f.view === oldName ? { ...f, view: renameViewValue.trim() } : f));
+        setRenamingView(null);
+        setRenameViewValue('');
+      } else {
+        setError(result.error || 'Failed to rename view');
+      }
+    });
+  };
+
   const formatDate = (date: Date | null) => {
     if (!date) return 'Never';
     const d = new Date(date);
@@ -327,6 +352,73 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Views management */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+          Views ({existingViews.length})
+        </h2>
+        <div className="space-y-2">
+          {existingViews.map((viewName) => (
+            <div
+              key={viewName}
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between gap-3"
+            >
+              {renamingView === viewName ? (
+                <input
+                  type="text"
+                  value={renameViewValue}
+                  onChange={(e) => setRenameViewValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveRenameView(viewName);
+                    if (e.key === 'Escape') { setRenamingView(null); setRenameViewValue(''); }
+                  }}
+                  autoFocus
+                  className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              ) : (
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{viewName}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                    {viewFeedCounts.get(viewName) ?? 0} feed{(viewFeedCounts.get(viewName) ?? 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+              <div className="flex gap-2 flex-shrink-0">
+                {renamingView === viewName ? (
+                  <>
+                    <button
+                      onClick={() => handleSaveRenameView(viewName)}
+                      disabled={isPending || !renameViewValue.trim()}
+                      className="p-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 transition-colors"
+                      title="Save"
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      onClick={() => { setRenamingView(null); setRenameViewValue(''); }}
+                      disabled={isPending}
+                      className="p-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 transition-colors"
+                      title="Cancel"
+                    >
+                      <X size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { setRenamingView(viewName); setRenameViewValue(viewName); }}
+                    disabled={isPending}
+                    className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                    title="Rename view"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div>
