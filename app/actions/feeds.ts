@@ -5,7 +5,7 @@ import { Feed } from '@/types';
 import { getFeeds, addFeed as dbAddFeed, updateFeed as dbUpdateFeed, deleteFeed as dbDeleteFeed } from '@/lib/db';
 import { fetchFeedMetadata } from '@/lib/rss';
 
-export async function addFeed(url: string, category: string, color: string): Promise<{ success: boolean; error?: string }> {
+export async function addFeed(url: string, category: string, color: string, view: string = 'Default'): Promise<{ success: boolean; error?: string }> {
   try {
     // Reject duplicate URLs before doing any network work
     const existingFeeds = await getFeeds();
@@ -22,6 +22,7 @@ export async function addFeed(url: string, category: string, color: string): Pro
       category,
       color,
       name: metadata.name,
+      view: view || 'Default',
     };
 
     await dbAddFeed(newFeed);
@@ -38,7 +39,7 @@ export async function addFeed(url: string, category: string, color: string): Pro
   }
 }
 
-export async function updateFeed(id: string, updates: { name?: string; category?: string; color?: string }): Promise<{ success: boolean; error?: string }> {
+export async function updateFeed(id: string, updates: { name?: string; category?: string; color?: string; view?: string }): Promise<{ success: boolean; error?: string }> {
   try {
     await dbUpdateFeed(id, updates);
     revalidatePath('/');

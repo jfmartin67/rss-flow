@@ -33,6 +33,7 @@ export default function RiverView() {
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [, setCurrentTime] = useState<Date>(new Date());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedView, setSelectedView] = useState<string>('All');
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [hideReadArticles, setHideReadArticles] = useState(false);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshInterval>(0);
@@ -123,6 +124,9 @@ export default function RiverView() {
 
   // Fetch initial data client-side so the loading skeleton is always visible
   useEffect(() => {
+    const savedView = localStorage.getItem('rss-flow:selectedView');
+    if (savedView) setSelectedView(savedView);
+
     Promise.all([fetchAllArticles('24h'), getReadArticlesList()]).then(([result, guids]) => {
       setArticles(result.articles);
       setFetchError(result.error ?? null);
@@ -253,6 +257,20 @@ export default function RiverView() {
     setContentLines(lines);
   };
 
+  // Derive sorted list of distinct view names from loaded articles
+  const availableViews = useMemo(() => {
+    const views = new Set<string>();
+    articles.forEach(a => { if (a.view) views.add(a.view); });
+    return Array.from(views).sort();
+  }, [articles]);
+
+  const handleViewChange = (v: string) => {
+    setSelectedView(v);
+    localStorage.setItem('rss-flow:selectedView', v);
+    // Clear category filter when switching views to avoid stale selections
+    setSelectedCategories(new Set());
+  };
+
   const handleMarkAsRead = (guid: string) => {
     setReadGuids(prev => new Set(prev).add(guid));
   };
@@ -320,10 +338,11 @@ export default function RiverView() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   };
 
-  // Extract unique categories from articles
+  // Extract unique categories from articles, scoped to the selected view
   const getUniqueCategories = (): { category: string; color: string }[] => {
     const categoryMap = new Map<string, string>();
     articles.forEach(article => {
+      if (selectedView !== 'All' && article.view !== selectedView) return;
       if (article.category && !categoryMap.has(article.category)) {
         categoryMap.set(article.category, article.categoryColor);
       }
@@ -347,8 +366,10 @@ export default function RiverView() {
     setSelectedCategories(new Set());
   };
 
-  // Filter articles by selected categories and read status
+  // Filter articles by view, selected categories, and read status
   const filteredArticles = articles.filter(article => {
+    // Filter by view
+    if (selectedView !== 'All' && article.view !== selectedView) return false;
     // Filter by category if categories are selected
     if (selectedCategories.size > 0 && !selectedCategories.has(article.category)) {
       return false;
@@ -360,24 +381,26 @@ export default function RiverView() {
     return true;
   });
 
-  // Article count per category — respects hideReadArticles, used for filter pill badges
+  // Article count per category — respects view filter and hideReadArticles, used for filter pill badges
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
     articles.forEach(article => {
+      if (selectedView !== 'All' && article.view !== selectedView) return;
       if (hideReadArticles && readGuids.has(article.guid)) return;
       counts.set(article.category, (counts.get(article.category) || 0) + 1);
     });
     return counts;
-  }, [articles, hideReadArticles, readGuids]);
+  }, [articles, selectedView, hideReadArticles, readGuids]);
 
-  // Memoized feed velocities — computed once per articles/timeRange change, not per item
+  // Memoized feed velocities — computed once per articles/view/timeRange change, not per item
   const feedVelocities = useMemo(() => {
     const counts = new Map<string, number>();
     articles.forEach(article => {
+      if (selectedView !== 'All' && article.view !== selectedView) return;
       counts.set(article.feedUrl, (counts.get(article.feedUrl) || 0) + 1);
     });
     return counts;
-  }, [articles]);
+  }, [articles, selectedView]);
 
   const isLowVelocityFeed = useCallback((feedUrl: string): boolean => {
     return (feedVelocities.get(feedUrl) || 0) <= FEED_VELOCITY_THRESHOLDS[timeRange];
@@ -574,6 +597,27 @@ export default function RiverView() {
               </a>
             </div>
           </div>
+
+          {/* View switcher — shown only when feeds span multiple views */}
+          {availableViews.length > 1 && (
+            <div className="hidden md:flex items-center justify-center mt-3">
+              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                {(['All', ...availableViews]).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => handleViewChange(v)}
+                    className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      selectedView === v
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -638,6 +682,32 @@ export default function RiverView() {
               {unreadCount}
             </button>
           </div>
+
+          {/* View Section — only when multiple views exist */}
+          {availableViews.length > 1 && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                View
+              </h3>
+              <div className="flex flex-col gap-2">
+                {(['All', ...availableViews]).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => { handleViewChange(v); setIsMenuOpen(false); }}
+                    className={`
+                      px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                      ${selectedView === v
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }
+                    `}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Time Range Section */}
           <div>
@@ -893,7 +963,8 @@ export default function RiverView() {
         ) : filteredArticles.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">
-              No articles match the selected categories.
+              No articles match the current filters
+              {selectedView !== 'All' ? ` in the "${selectedView}" view` : ''}.
             </p>
           </div>
         ) : (

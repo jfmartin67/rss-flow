@@ -48,6 +48,7 @@ export async function fetchFeedArticles(feed: Feed): Promise<Article[]> {
       feedUrl: feed.url,
       category: feed.category,
       categoryColor: feed.color,
+      view: feed.view || 'Default',
     }));
   } catch (error) {
     console.error(`Error fetching articles from ${feed.url}:`, error);

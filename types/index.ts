@@ -4,6 +4,7 @@ export interface Feed {
   category: string;
   color: string;
   name: string;
+  view: string;
 }
 
 export interface Article {
@@ -16,6 +17,7 @@ export interface Article {
   feedUrl: string;
   category: string;
   categoryColor: string;
+  view: string;
 }
 
 export type TimeRange = '24h' | '3d' | '7d';

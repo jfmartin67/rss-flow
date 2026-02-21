@@ -25,7 +25,9 @@ export async function getFeeds(): Promise<Feed[]> {
     const feedsJson = await redis.get(FEEDS_KEY);
     if (!feedsJson) return [];
     try {
-      return JSON.parse(feedsJson);
+      const feeds = JSON.parse(feedsJson);
+      // Backward-compat: default missing view field to 'Default'
+      return feeds.map((f: Feed) => ({ ...f, view: f.view || 'Default' }));
     } catch {
       console.error('Feeds data in Redis is corrupted (invalid JSON) — returning empty list');
       return [];

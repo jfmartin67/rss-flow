@@ -33,7 +33,7 @@ export async function GET() {
     const feedOutlines = categoryFeeds
       .map(
         (f) =>
-          `      <outline type="rss" text="${escapeXml(f.name)}" title="${escapeXml(f.name)}" xmlUrl="${escapeXml(f.url)}" />`
+          `      <outline type="rss" text="${escapeXml(f.name)}" title="${escapeXml(f.name)}" xmlUrl="${escapeXml(f.url)}" view="${escapeXml(f.view || 'Default')}" />`
       )
       .join('\n');
     return `    <outline text="${escapeXml(category)}">\n${feedOutlines}\n    </outline>`;

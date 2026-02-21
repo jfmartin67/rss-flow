@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { Feed } from '@/types';
 import { addFeed, updateFeed, deleteFeed, getAllFeeds } from '@/app/actions/feeds';
 import { getAllFeedStatistics, type FeedStats } from '@/app/actions/articles';
@@ -48,6 +48,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
   const [color, setColor] = useState(DEFAULT_COLORS[0]);
+  const [view, setView] = useState('Default');
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
   const { theme, toggleTheme } = useTheme();
@@ -55,9 +56,16 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [editView, setEditView] = useState('');
   const [expandedStats, setExpandedStats] = useState<Set<string>>(new Set());
   const [feedStats, setFeedStats] = useState<Map<string, FeedStats>>(new Map());
   const [loadingStats, setLoadingStats] = useState<Set<string>>(new Set());
+
+  const existingViews = useMemo(() => {
+    const views = new Set<string>(['Default']);
+    feeds.forEach(f => { if (f.view) views.add(f.view); });
+    return Array.from(views).sort();
+  }, [feeds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,12 +88,13 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
     }
 
     startTransition(async () => {
-      const result = await addFeed(url, category, color);
+      const result = await addFeed(url, category, color, view || 'Default');
 
       if (result.success) {
         setUrl('');
         setCategory('');
         setColor(DEFAULT_COLORS[0]);
+        setView('Default');
         const updatedFeeds = await getAllFeeds();
         setFeeds(updatedFeeds);
       } else {
@@ -99,6 +108,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
     setEditName(feed.name);
     setEditCategory(feed.category);
     setEditColor(feed.color);
+    setEditView(feed.view || 'Default');
   };
 
   const handleCancelEdit = () => {
@@ -106,6 +116,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
     setEditName('');
     setEditCategory('');
     setEditColor('');
+    setEditView('');
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -119,12 +130,13 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
         name: editName.trim(),
         category: editCategory.trim(),
         color: editColor,
+        view: editView.trim() || 'Default',
       });
 
       if (result.success) {
         const updatedFeeds = feeds.map(feed =>
           feed.id === id
-            ? { ...feed, name: editName.trim(), category: editCategory.trim(), color: editColor }
+            ? { ...feed, name: editName.trim(), category: editCategory.trim(), color: editColor, view: editView.trim() || 'Default' }
             : feed
         );
         // Re-sort feeds after update
@@ -133,6 +145,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
         setEditName('');
         setEditCategory('');
         setEditColor('');
+        setEditView('');
       } else {
         setError(result.error || 'Failed to update feed');
       }
@@ -267,6 +280,24 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
             </div>
 
             <div>
+              <label htmlFor="view" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                View
+              </label>
+              <input
+                type="text"
+                id="view"
+                list="view-suggestions"
+                value={view}
+                onChange={(e) => setView(e.target.value)}
+                placeholder="Default"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <datalist id="view-suggestions">
+                {existingViews.map(v => <option key={v} value={v} />)}
+              </datalist>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category Color
               </label>
@@ -341,6 +372,17 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                           className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
                           placeholder="Category"
                         />
+                        <input
+                          type="text"
+                          list="edit-view-suggestions"
+                          value={editView}
+                          onChange={(e) => setEditView(e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="View (e.g. Default)"
+                        />
+                        <datalist id="edit-view-suggestions">
+                          {existingViews.map(v => <option key={v} value={v} />)}
+                        </datalist>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Tag Color
@@ -373,15 +415,20 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                     )}
                   </div>
                   {editingId !== feed.id && (
-                    <span
-                      className="px-2 py-1 rounded text-xs font-medium flex-shrink-0"
-                      style={{
-                        backgroundColor: `${feed.color}20`,
-                        color: feed.color,
-                      }}
-                    >
-                      {feed.category}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span
+                        className="px-2 py-1 rounded text-xs font-medium"
+                        style={{
+                          backgroundColor: `${feed.color}20`,
+                          color: feed.color,
+                        }}
+                      >
+                        {feed.category}
+                      </span>
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                        {feed.view || 'Default'}
+                      </span>
+                    </div>
                   )}
                 </div>
                     <div className="ml-4 flex gap-2">
