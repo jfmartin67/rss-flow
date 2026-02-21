@@ -48,7 +48,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
   const [color, setColor] = useState(DEFAULT_COLORS[0]);
-  const [view, setView] = useState('Default');
+  const [view, setView] = useState('');
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
   const { theme, toggleTheme } = useTheme();
