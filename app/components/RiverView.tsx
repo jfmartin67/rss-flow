@@ -264,6 +264,15 @@ export default function RiverView() {
     return Array.from(views).sort();
   }, [articles]);
 
+  // Reset selectedView if the persisted name no longer exists (e.g. after a view rename)
+  useEffect(() => {
+    if (selectedView === 'All' || availableViews.length === 0) return;
+    if (!availableViews.includes(selectedView)) {
+      setSelectedView('All');
+      localStorage.removeItem('rss-flow:selectedView');
+    }
+  }, [availableViews, selectedView]);
+
   const handleViewChange = (v: string) => {
     setSelectedView(v);
     localStorage.setItem('rss-flow:selectedView', v);
