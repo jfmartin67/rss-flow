@@ -54,7 +54,7 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
     <>
       <article
         onClick={handleClick}
-        className={`flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden ${
+        className={`break-inside-avoid mb-4 flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden ${
           isRead ? 'opacity-60' : ''
         }`}
       >
