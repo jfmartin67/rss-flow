@@ -99,7 +99,7 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
           {/* Content preview */}
           {article.content && article.title?.trim() && (
             <p
-              className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed"
+              className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed flex-1"
               style={{
                 display: '-webkit-box',
                 WebkitLineClamp: 3,
@@ -113,7 +113,7 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
         </div>
 
         {/* Footer: read dot + modal button */}
-        <div className="flex items-center justify-between px-3 pb-3">
+        <div className="flex items-center justify-between px-3 pb-3 mt-auto">
           <button
             onClick={(e) => {
               e.stopPropagation();
