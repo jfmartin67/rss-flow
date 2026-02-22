@@ -54,9 +54,9 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
     <>
       <article
         onClick={handleClick}
-        className={`break-inside-avoid mb-4 flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden ${
-          isRead ? 'opacity-60' : ''
-        }`}
+        className={`break-inside-avoid mb-4 flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer transition-shadow overflow-hidden ${
+          article.imageUrl ? 'shadow-sm hover:shadow-md' : 'shadow-md hover:shadow-lg'
+        } ${isRead ? 'opacity-60' : ''}`}
       >
         {/* Top accent border */}
         <div className="h-[3px] flex-shrink-0" style={{ backgroundColor: article.categoryColor }} />
