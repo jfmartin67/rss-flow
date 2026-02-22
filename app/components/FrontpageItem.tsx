@@ -61,6 +61,18 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
         {/* Top accent border */}
         <div className="h-[3px] flex-shrink-0" style={{ backgroundColor: article.categoryColor }} />
 
+        {/* Article image */}
+        {article.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={article.imageUrl}
+            alt=""
+            className="w-full object-cover max-h-48"
+            loading="lazy"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
+
         <div className="flex flex-col gap-1.5 p-3 flex-1">
           {/* Category + time */}
           <div className="flex items-center justify-between gap-2">

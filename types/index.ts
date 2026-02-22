@@ -18,6 +18,7 @@ export interface Article {
   category: string;
   categoryColor: string;
   view: string;
+  imageUrl?: string;
 }
 
 export type TimeRange = '24h' | '3d' | '7d';

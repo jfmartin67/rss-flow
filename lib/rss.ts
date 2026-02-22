@@ -9,7 +9,40 @@ const parser = new Parser({
   headers: {
     'User-Agent': 'RSS-Flow/1.0',
   },
+  customFields: {
+    item: [
+      ['media:content', 'mediaContent'],
+      ['media:thumbnail', 'mediaThumbnail'],
+    ],
+  },
 });
+
+// Extracts the best available image URL from an RSS item
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractImageUrl(item: any): string | undefined {
+  // media:content (most common — YouTube, many news sites)
+  const mc = item.mediaContent;
+  if (mc) {
+    const url = mc?.['$']?.url ?? (Array.isArray(mc) ? mc[0]?.['$']?.url : undefined);
+    if (url) return url;
+  }
+  // media:thumbnail
+  const mt = item.mediaThumbnail;
+  if (mt) {
+    const url = mt?.['$']?.url ?? (Array.isArray(mt) ? mt[0]?.['$']?.url : undefined);
+    if (url) return url;
+  }
+  // enclosure (podcasts / image enclosures)
+  if (item.enclosure?.url && item.enclosure?.type?.startsWith('image/')) {
+    return item.enclosure.url;
+  }
+  // First <img> in the HTML content/summary
+  const html = item.content || item.summary || '';
+  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (match) return match[1];
+
+  return undefined;
+}
 
 export interface FeedMetadata {
   name: string;
@@ -49,6 +82,7 @@ export async function fetchFeedArticles(feed: Feed): Promise<Article[]> {
       category: feed.category,
       categoryColor: feed.color,
       view: feed.view || 'Default',
+      imageUrl: extractImageUrl(item),
     }));
   } catch (error) {
     console.error(`Error fetching articles from ${feed.url}:`, error);
