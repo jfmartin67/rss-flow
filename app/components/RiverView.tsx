@@ -5,10 +5,11 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import Image from 'next/image';
 import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
+import FrontpageItem from './FrontpageItem';
 import ArticleModal from './ArticleModal';
 import DigestPanel from './DigestPanel';
 import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 import LoadingSkeleton from './LoadingSkeleton';
@@ -40,6 +41,7 @@ export default function RiverView() {
   const [pendingArticles, setPendingArticles] = useState<Article[] | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState<'river' | 'frontpage'>('river');
   const [isDigestOpen, setIsDigestOpen] = useState(false);
   const [digestOpenedArticle, setDigestOpenedArticle] = useState<Article | null>(null);
   const [digestOpenedContent, setDigestOpenedContent] = useState<string | null>(null);
@@ -126,6 +128,9 @@ export default function RiverView() {
   useEffect(() => {
     const savedView = localStorage.getItem('rss-flow:selectedView');
     if (savedView) setSelectedView(savedView);
+
+    const savedMode = localStorage.getItem('rss-flow:displayMode');
+    if (savedMode === 'frontpage') setDisplayMode('frontpage');
 
     Promise.all([fetchAllArticles('24h'), getReadArticlesList()]).then(([result, guids]) => {
       setArticles(result.articles);
@@ -278,6 +283,12 @@ export default function RiverView() {
     localStorage.setItem('rss-flow:selectedView', v);
     // Clear category filter when switching views to avoid stale selections
     setSelectedCategories(new Set());
+  };
+
+  const handleToggleDisplayMode = () => {
+    const next = displayMode === 'river' ? 'frontpage' : 'river';
+    setDisplayMode(next);
+    localStorage.setItem('rss-flow:displayMode', next);
   };
 
   const handleMarkAsRead = (guid: string) => {
@@ -499,22 +510,24 @@ export default function RiverView() {
                 ))}
               </div>
 
-              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
-                  <button
-                    key={lines}
-                    onClick={() => handleContentLinesChange(lines)}
-                    title={lines === 0 ? 'No preview' : `${lines} line${lines > 1 ? 's' : ''} preview`}
-                    className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      contentLines === lines
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {lines === 0 ? '—' : lines}
-                  </button>
-                ))}
-              </div>
+              {displayMode === 'river' && (
+                <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                  {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
+                    <button
+                      key={lines}
+                      onClick={() => handleContentLinesChange(lines)}
+                      title={lines === 0 ? 'No preview' : `${lines} line${lines > 1 ? 's' : ''} preview`}
+                      className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        contentLines === lines
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {lines === 0 ? '—' : lines}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {availableViews.length > 1 && (
                 <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
@@ -548,6 +561,17 @@ export default function RiverView() {
 
             <div className="hidden md:flex items-center gap-2 flex-shrink-0">
               <div className="w-px h-5 bg-gray-300 dark:bg-gray-600" />
+              <button
+                onClick={handleToggleDisplayMode}
+                className={`p-2 rounded transition-colors ${
+                  displayMode === 'frontpage'
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                title={displayMode === 'frontpage' ? 'Switch to River view' : 'Switch to Frontpage view'}
+              >
+                <Newspaper size={18} />
+              </button>
               <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
                 {formatRefreshTime(lastRefreshTime)}
               </span>
@@ -743,32 +767,34 @@ export default function RiverView() {
             </div>
           </div>
 
-          {/* Content Preview Section */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-              Content Preview
-            </h3>
-            <div className="flex flex-col gap-2">
-              {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
-                <button
-                  key={lines}
-                  onClick={() => {
-                    handleContentLinesChange(lines);
-                    setIsMenuOpen(false);
-                  }}
-                  className={`
-                    px-4 py-3 text-sm font-medium rounded-lg transition-colors
-                    ${contentLines === lines
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }
-                  `}
-                >
-                  {lines === 0 ? 'None' : `${lines} Line${lines > 1 ? 's' : ''}`}
-                </button>
-              ))}
+          {/* Content Preview Section — hidden in Frontpage mode */}
+          {displayMode === 'river' && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                Content Preview
+              </h3>
+              <div className="flex flex-col gap-2">
+                {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
+                  <button
+                    key={lines}
+                    onClick={() => {
+                      handleContentLinesChange(lines);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`
+                      px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                      ${contentLines === lines
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }
+                    `}
+                  >
+                    {lines === 0 ? 'None' : `${lines} Line${lines > 1 ? 's' : ''}`}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Category Filter Section - Landscape only */}
           <div className="landscape-only">
@@ -818,6 +844,17 @@ export default function RiverView() {
               Actions
             </h3>
             <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { handleToggleDisplayMode(); setIsMenuOpen(false); }}
+                className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  displayMode === 'frontpage'
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Newspaper size={18} />
+                {displayMode === 'frontpage' ? 'Switch to River' : 'Switch to Frontpage'}
+              </button>
               <button
                 onClick={() => {
                   setHideReadArticles(!hideReadArticles);
@@ -973,6 +1010,18 @@ export default function RiverView() {
               No articles match the current filters
               {selectedView !== 'All' ? ` in the "${selectedView}" view` : ''}.
             </p>
+          </div>
+        ) : displayMode === 'frontpage' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            {filteredArticles.map(article => (
+              <FrontpageItem
+                key={article.guid}
+                article={article}
+                isRead={readGuids.has(article.guid)}
+                onRead={handleMarkAsRead}
+                onUnread={handleMarkAsUnread}
+              />
+            ))}
           </div>
         ) : (
           <div ref={listRef}>
