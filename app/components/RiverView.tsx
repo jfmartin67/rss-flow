@@ -7,9 +7,10 @@ import { Article, TimeRange, ContentLines } from '@/types';
 import ArticleItem from './ArticleItem';
 import FrontpageItem from './FrontpageItem';
 import ArticleModal from './ArticleModal';
+import StatsPanel from './StatsPanel';
 import DigestPanel from './DigestPanel';
 import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 import LoadingSkeleton from './LoadingSkeleton';
@@ -42,6 +43,7 @@ export default function RiverView() {
   const [pendingCount, setPendingCount] = useState(0);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<'river' | 'frontpage'>('river');
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isDigestOpen, setIsDigestOpen] = useState(false);
   const [digestOpenedArticle, setDigestOpenedArticle] = useState<Article | null>(null);
   const [digestOpenedContent, setDigestOpenedContent] = useState<string | null>(null);
@@ -583,6 +585,17 @@ export default function RiverView() {
               >
                 <Newspaper size={18} />
               </button>
+              <button
+                onClick={() => setIsStatsOpen(true)}
+                className={`p-2 rounded transition-colors ${
+                  isStatsOpen
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+                title="Reading stats"
+              >
+                <BarChart2 size={18} />
+              </button>
               <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
                 {formatRefreshTime(lastRefreshTime)}
               </span>
@@ -877,6 +890,13 @@ export default function RiverView() {
                 {displayMode === 'frontpage' ? 'Switch to River' : 'Switch to Frontpage'}
               </button>
               <button
+                onClick={() => { setIsStatsOpen(true); setIsMenuOpen(false); }}
+                className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <BarChart2 size={18} />
+                Reading Stats
+              </button>
+              <button
                 onClick={() => {
                   setHideReadArticles(!hideReadArticles);
                   setIsMenuOpen(false);
@@ -993,6 +1013,16 @@ export default function RiverView() {
           {pendingCount} new article{pendingCount !== 1 ? 's' : ''} — tap to load
         </div>
       )}
+
+      {/* Stats panel */}
+      <StatsPanel
+        isOpen={isStatsOpen}
+        onClose={() => setIsStatsOpen(false)}
+        articles={articles}
+        readGuids={readGuids}
+        timeRange={timeRange}
+        selectedView={selectedView}
+      />
 
       {/* Digest panel — triggered by tapping the unread count badge */}
       <DigestPanel
