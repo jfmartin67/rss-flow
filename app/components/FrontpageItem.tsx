@@ -18,6 +18,8 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleClick = async () => {
     if (article.link) {
@@ -62,18 +64,37 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
         <div className="h-[3px] flex-shrink-0" style={{ backgroundColor: article.categoryColor }} />
 
         {/* Article image */}
-        {article.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={article.imageUrl}
-            alt=""
-            className="w-full object-cover max-h-48"
-            loading="lazy"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
+        {article.imageUrl && !imageError && (
+          <div className="relative w-full h-40 flex-shrink-0">
+            {/* Skeleton shown while image loads */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={article.imageUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+            {/* Category color gradient bleeding down from bottom of image */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
+              style={{ background: `linear-gradient(to bottom, transparent, ${article.categoryColor}99)` }}
+            />
+          </div>
         )}
 
-        <div className="flex flex-col gap-1.5 p-3 flex-1">
+        {/* Faint color bleed continues into text area */}
+        <div
+          className="flex flex-col gap-1.5 p-3 flex-1"
+          style={article.imageUrl && !imageError
+            ? { background: `linear-gradient(to bottom, ${article.categoryColor}22, transparent 40%)` }
+            : undefined
+          }
+        >
           {/* Category + time */}
           <div className="flex items-center justify-between gap-2">
             <span
