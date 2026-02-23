@@ -412,6 +412,17 @@ export default function RiverView() {
     return counts;
   }, [articles, selectedView, hideReadArticles, readGuids]);
 
+  // Unread count per category — always ignores hideReadArticles so the badge is always visible
+  const categoryUnreadCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    articles.forEach(article => {
+      if (selectedView !== 'All' && article.view !== selectedView) return;
+      if (readGuids.has(article.guid)) return;
+      counts.set(article.category, (counts.get(article.category) || 0) + 1);
+    });
+    return counts;
+  }, [articles, selectedView, readGuids]);
+
   // Memoized feed velocities — computed once per articles/view/timeRange change, not per item
   const feedVelocities = useMemo(() => {
     const counts = new Map<string, number>();
@@ -691,6 +702,11 @@ export default function RiverView() {
                   <span className={`text-[10px] font-semibold tabular-nums ${selectedCategories.has(category) ? 'opacity-80' : 'opacity-60'}`}>
                     {categoryCounts.get(category) ?? 0}
                   </span>
+                  {!hideReadArticles && (categoryUnreadCounts.get(category) ?? 0) > 0 && (
+                    <span className="text-[10px] font-bold tabular-nums px-1 py-0.5 rounded-full bg-orange-500 text-white leading-none">
+                      {categoryUnreadCounts.get(category)}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -833,6 +849,11 @@ export default function RiverView() {
                   <span className={`text-xs font-semibold tabular-nums ${selectedCategories.has(category) ? 'opacity-80' : 'opacity-60'}`}>
                     {categoryCounts.get(category) ?? 0}
                   </span>
+                  {!hideReadArticles && (categoryUnreadCounts.get(category) ?? 0) > 0 && (
+                    <span className="text-[10px] font-bold tabular-nums px-1 py-0.5 rounded-full bg-orange-500 text-white leading-none">
+                      {categoryUnreadCounts.get(category)}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
