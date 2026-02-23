@@ -1033,7 +1033,7 @@ export default function RiverView() {
             </p>
           </div>
         ) : displayMode === 'frontpage' ? (
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 p-4">
+          <div className="columns-1 sm:columns-2 lg:columns-4 gap-4 p-4">
             {filteredArticles.map(article => (
               <FrontpageItem
                 key={article.guid}
