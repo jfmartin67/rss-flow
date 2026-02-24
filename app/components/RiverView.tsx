@@ -35,10 +35,10 @@ export default function RiverView() {
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [, setCurrentTime] = useState<Date>(new Date());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedView, setSelectedView] = useState<string>('All');
+  const [selectedView, setSelectedView] = useState<string>('Default');
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [hideReadArticles, setHideReadArticles] = useState(false);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshInterval>(0);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<AutoRefreshInterval>(15);
   const [pendingArticles, setPendingArticles] = useState<Article[] | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -130,6 +130,12 @@ export default function RiverView() {
   useEffect(() => {
     const savedView = localStorage.getItem('rss-flow:selectedView');
     if (savedView) setSelectedView(savedView);
+
+    const savedAutoRefresh = localStorage.getItem('rss-flow:autoRefresh');
+    if (savedAutoRefresh !== null) {
+      const parsed = parseInt(savedAutoRefresh, 10) as AutoRefreshInterval;
+      if ((AUTO_REFRESH_INTERVALS as readonly number[]).includes(parsed)) setAutoRefreshInterval(parsed);
+    }
 
     const savedMode = localStorage.getItem('rss-flow:displayMode');
     if (savedMode === 'frontpage') setDisplayMode('frontpage');
@@ -246,7 +252,9 @@ export default function RiverView() {
 
   const cycleAutoRefresh = () => {
     const idx = AUTO_REFRESH_INTERVALS.indexOf(autoRefreshInterval);
-    setAutoRefreshInterval(AUTO_REFRESH_INTERVALS[(idx + 1) % AUTO_REFRESH_INTERVALS.length]);
+    const next = AUTO_REFRESH_INTERVALS[(idx + 1) % AUTO_REFRESH_INTERVALS.length];
+    setAutoRefreshInterval(next);
+    localStorage.setItem('rss-flow:autoRefresh', String(next));
   };
 
   const handleTimeRangeChange = async (range: TimeRange) => {
@@ -445,6 +453,7 @@ export default function RiverView() {
     estimateSize: useCallback(() => VIRTUAL_ITEM_HEIGHT[contentLines], [contentLines]),
     overscan: VIRTUAL_OVERSCAN,
     scrollMargin: listRef.current?.offsetTop ?? 0,
+    getItemKey: useCallback((index: number) => filteredArticles[index]?.guid ?? index, [filteredArticles]),
   });
 
   // Unread articles (filtered) — used for the badge count and digest panel

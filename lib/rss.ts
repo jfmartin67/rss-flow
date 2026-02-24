@@ -98,8 +98,10 @@ export async function fetchArticleContent(feedUrl: string, articleGuid: string):
       return '';
     }
 
-    const item = parsedFeed.items.find(
-      item => (item.guid || item.link || item.title) === articleGuid
+    const item = parsedFeed.items.find(item =>
+      (item.guid && item.guid === articleGuid) ||
+      (item.link && item.link === articleGuid) ||
+      (item.title && item.title === articleGuid)
     );
 
     if (!item) {
