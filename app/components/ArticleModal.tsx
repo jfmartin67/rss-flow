@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ExternalLink, Loader2, Copy, Send, Sparkles, Quote } from 'lucide-react';
 import { Article } from '@/types';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatRelativeTime, getFaviconUrl } from '@/lib/utils';
 import { generateSummary, extractKeyQuotes } from '@/app/actions/ai';
 
 interface ArticleModalProps {
@@ -523,8 +523,18 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
                 {formatRelativeTime(article.pubDate)}
               </span>
               <span className="text-gray-400 dark:text-gray-600 max-md:hidden">·</span>
-              <span className="text-xs text-gray-500 dark:text-gray-500 font-bold max-md:hidden">
-                {article.feedName}
+              <span className="flex items-center gap-1 max-md:hidden">
+                <img
+                  src={getFaviconUrl(article.feedUrl)}
+                  alt=""
+                  width={12}
+                  height={12}
+                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-500 font-bold">
+                  {article.feedName}
+                </span>
               </span>
             </div>
             <h2

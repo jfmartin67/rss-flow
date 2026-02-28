@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Article, ContentLines } from '@/types';
-import { formatRelativeTime, truncateContent } from '@/lib/utils';
+import { formatRelativeTime, truncateContent, getFaviconUrl } from '@/lib/utils';
 import { markAsRead, markAsUnread, fetchArticleContent } from '@/app/actions/articles';
 import ArticleModal from './ArticleModal';
 
@@ -100,8 +100,18 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
               <span className="text-xs text-gray-600 dark:text-gray-400 flex-shrink-0 tabular-nums md:w-14">
                 {formatRelativeTime(article.pubDate)}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-500 truncate font-bold max-md:hidden flex-1">
-                {article.feedName}
+              <span className="flex items-center gap-1 max-md:hidden flex-1 min-w-0">
+                <img
+                  src={getFaviconUrl(article.feedUrl)}
+                  alt=""
+                  width={12}
+                  height={12}
+                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <span className="text-xs text-gray-500 dark:text-gray-500 truncate font-bold">
+                  {article.feedName}
+                </span>
               </span>
             </div>
             {/* Title section - always starts at same position */}

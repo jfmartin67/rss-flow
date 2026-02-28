@@ -69,6 +69,15 @@ export function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
+export function getFaviconUrl(feedUrl: string, size: number = 32): string {
+  try {
+    const domain = new URL(feedUrl).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Interleaves articles to prevent more than maxConsecutive articles from the same feed appearing in a row.
  * This helps balance timelines when some feeds publish much more frequently than others.

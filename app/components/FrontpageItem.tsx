@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Article } from '@/types';
-import { formatRelativeTime, truncateContent } from '@/lib/utils';
+import { formatRelativeTime, truncateContent, getFaviconUrl } from '@/lib/utils';
 import { markAsRead, markAsUnread, fetchArticleContent } from '@/app/actions/articles';
 import ArticleModal from './ArticleModal';
 
@@ -116,9 +116,19 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
           </div>
 
           {/* Feed name */}
-          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 truncate">
-            {article.feedName}
-          </p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <img
+              src={getFaviconUrl(article.feedUrl)}
+              alt=""
+              width={12}
+              height={12}
+              className="w-3 h-3 rounded-sm flex-shrink-0"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 truncate">
+              {article.feedName}
+            </p>
+          </div>
 
           {/* Article title */}
           <h2
