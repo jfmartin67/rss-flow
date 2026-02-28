@@ -176,15 +176,17 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
                 }, 320);
               }
             }}
-            className={`w-2 h-2 rounded-full flex-shrink-0 transition-opacity ${
-              isRead
-                ? 'border border-gray-300 dark:border-gray-600 hover:border-gray-500 dark:hover:border-gray-400'
-                : 'hover:opacity-60'
-            }`}
-            style={isRead ? undefined : { backgroundColor: article.categoryColor }}
+            className="p-2 -m-2 flex-shrink-0 transition-opacity hover:opacity-60"
             title={isRead ? 'Mark as unread' : 'Mark as read'}
             aria-label={isRead ? 'Mark as unread' : 'Mark as read'}
-          />
+          >
+            <span
+              className={`w-3.5 h-3.5 rounded-full block flex-shrink-0 ${
+                isRead ? 'border-2 border-gray-300 dark:border-gray-600' : ''
+              }`}
+              style={isRead ? undefined : { backgroundColor: article.categoryColor }}
+            />
+          </button>
           <button
             onClick={handleOpenModal}
             className="p-1 text-gray-400 hover:text-orange-500 dark:text-gray-500 dark:hover:text-orange-400 transition-colors"
