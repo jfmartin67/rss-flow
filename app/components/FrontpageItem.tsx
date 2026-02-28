@@ -20,6 +20,7 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [fadingOut, setFadingOut] = useState(false);
 
   const handleClick = async () => {
     if (article.link) {
@@ -56,9 +57,9 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
     <>
       <article
         onClick={handleClick}
-        className={`break-inside-avoid mb-4 flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer transition-shadow overflow-hidden ${
+        className={`break-inside-avoid mb-4 flex flex-col rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer overflow-hidden transition-[opacity,shadow] duration-300 ${
           article.imageUrl ? 'shadow-sm hover:shadow-md' : 'shadow-xl hover:shadow-2xl'
-        }`}
+        } ${fadingOut ? 'opacity-0 pointer-events-none' : ''}`}
       >
         {/* Top accent border */}
         <div className="h-[3px] flex-shrink-0" style={{ backgroundColor: article.categoryColor }} />
@@ -154,8 +155,12 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
                 onUnread(article.guid);
                 markAsUnread(article.guid);
               } else {
-                onRead(article.guid);
-                markAsRead(article.guid);
+                setFadingOut(true);
+                setTimeout(() => {
+                  onRead(article.guid);
+                  markAsRead(article.guid);
+                  setFadingOut(false);
+                }, 350);
               }
             }}
             className={`w-2 h-2 rounded-full flex-shrink-0 transition-opacity ${
