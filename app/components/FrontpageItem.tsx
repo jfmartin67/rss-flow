@@ -21,6 +21,7 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [fadingOut, setFadingOut] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   const handleClick = async () => {
     if (article.link) {
@@ -52,6 +53,8 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
   };
 
   const title = article.title?.trim() || (article.content?.trim() ? `"${article.content.trim()}"` : 'Untitled');
+
+  if (hidden) return null;
 
   return (
     <>
@@ -157,10 +160,10 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
               } else {
                 setFadingOut(true);
                 setTimeout(() => {
+                  setHidden(true);
                   onRead(article.guid);
                   markAsRead(article.guid);
-                  setFadingOut(false);
-                }, 350);
+                }, 320);
               }
             }}
             className={`w-2 h-2 rounded-full flex-shrink-0 transition-opacity ${
