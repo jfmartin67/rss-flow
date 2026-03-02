@@ -10,7 +10,8 @@ import ArticleModal from './ArticleModal';
 import StatsPanel from './StatsPanel';
 import DigestPanel from './DigestPanel';
 import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2 } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2, Layers, List } from 'lucide-react';
+import { getFaviconUrl } from '@/lib/utils';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
 import LoadingSkeleton from './LoadingSkeleton';
@@ -42,7 +43,8 @@ export default function RiverView() {
   const [pendingArticles, setPendingArticles] = useState<Article[] | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<'river' | 'frontpage'>('river');
+  const [displayMode, setDisplayMode] = useState<'river' | 'frontpage' | 'source'>('river');
+  const [collapsedSources, setCollapsedSources] = useState<Set<string>>(new Set());
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isDigestOpen, setIsDigestOpen] = useState(false);
   const [digestOpenedArticle, setDigestOpenedArticle] = useState<Article | null>(null);
@@ -138,7 +140,7 @@ export default function RiverView() {
     }
 
     const savedMode = localStorage.getItem('rss-flow:displayMode');
-    if (savedMode === 'frontpage') setDisplayMode('frontpage');
+    if (savedMode === 'frontpage' || savedMode === 'source') setDisplayMode(savedMode);
 
     Promise.all([fetchAllArticles('24h'), getReadArticlesList()]).then(([result, guids]) => {
       setArticles(result.articles);
@@ -296,9 +298,18 @@ export default function RiverView() {
   };
 
   const handleToggleDisplayMode = () => {
-    const next = displayMode === 'river' ? 'frontpage' : 'river';
+    const next = displayMode === 'river' ? 'frontpage' : displayMode === 'frontpage' ? 'source' : 'river';
     setDisplayMode(next);
     localStorage.setItem('rss-flow:displayMode', next);
+  };
+
+  const toggleSourceCollapse = (feedName: string) => {
+    setCollapsedSources(prev => {
+      const next = new Set(prev);
+      if (next.has(feedName)) next.delete(feedName);
+      else next.add(feedName);
+      return next;
+    });
   };
 
   const handleMarkAsRead = (guid: string) => {
@@ -451,6 +462,20 @@ export default function RiverView() {
     return `/api/export/opml${qs ? `?${qs}` : ''}`;
   }, [selectedView, selectedCategories]);
 
+  const sourceGroups = useMemo(() => {
+    if (displayMode !== 'source') return [];
+    const groupMap = new Map<string, { feedName: string; feedUrl: string; articles: Article[] }>();
+    for (const article of filteredArticles) {
+      if (!groupMap.has(article.feedName)) {
+        groupMap.set(article.feedName, { feedName: article.feedName, feedUrl: article.feedUrl, articles: [] });
+      }
+      groupMap.get(article.feedName)!.articles.push(article);
+    }
+    return Array.from(groupMap.values()).sort((a, b) =>
+      a.feedName.localeCompare(b.feedName)
+    );
+  }, [filteredArticles, displayMode]);
+
   const isLowVelocityFeed = useCallback((feedUrl: string): boolean => {
     return (feedVelocities.get(feedUrl) || 0) <= FEED_VELOCITY_THRESHOLDS[timeRange];
   }, [feedVelocities, timeRange]);
@@ -540,7 +565,7 @@ export default function RiverView() {
                 ))}
               </div>
 
-              {displayMode === 'river' && (
+              {displayMode !== 'frontpage' && (
                 <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                   {([0, 1, 2, 3] as ContentLines[]).map((lines) => (
                     <button
@@ -594,13 +619,13 @@ export default function RiverView() {
               <button
                 onClick={handleToggleDisplayMode}
                 className={`p-2 rounded transition-colors ${
-                  displayMode === 'frontpage'
+                  displayMode !== 'river'
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
-                title={displayMode === 'frontpage' ? 'Switch to River view' : 'Switch to Frontpage view'}
+                title={displayMode === 'river' ? 'Switch to Frontpage' : displayMode === 'frontpage' ? 'Switch to By Source' : 'Switch to River'}
               >
-                <Newspaper size={18} />
+                {displayMode === 'river' ? <Newspaper size={18} /> : displayMode === 'frontpage' ? <Layers size={18} /> : <List size={18} />}
               </button>
               <button
                 onClick={() => setIsStatsOpen(true)}
@@ -814,7 +839,7 @@ export default function RiverView() {
           </div>
 
           {/* Content Preview Section — hidden in Frontpage mode */}
-          {displayMode === 'river' && (
+          {displayMode !== 'frontpage' && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                 Content Preview
@@ -898,13 +923,13 @@ export default function RiverView() {
               <button
                 onClick={() => { handleToggleDisplayMode(); setIsMenuOpen(false); }}
                 className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                  displayMode === 'frontpage'
+                  displayMode !== 'river'
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
-                <Newspaper size={18} />
-                {displayMode === 'frontpage' ? 'Switch to River' : 'Switch to Frontpage'}
+                {displayMode === 'river' ? <Newspaper size={18} /> : displayMode === 'frontpage' ? <Layers size={18} /> : <List size={18} />}
+                {displayMode === 'river' ? 'Switch to Frontpage' : displayMode === 'frontpage' ? 'Switch to By Source' : 'Switch to River'}
               </button>
               <button
                 onClick={() => { setIsStatsOpen(true); setIsMenuOpen(false); }}
@@ -1090,6 +1115,58 @@ export default function RiverView() {
                 onUnread={handleMarkAsUnread}
               />
             ))}
+          </div>
+        ) : displayMode === 'source' ? (
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {sourceGroups.map(group => {
+              const groupUnread = group.articles.filter(a => !readGuids.has(a.guid)).length;
+              const isCollapsed = collapsedSources.has(group.feedName);
+              return (
+                <div key={group.feedName}>
+                  <button
+                    onClick={() => toggleSourceCollapse(group.feedName)}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getFaviconUrl(group.feedUrl, 16)}
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="rounded-sm flex-shrink-0"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <span className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">
+                      {group.feedName}
+                    </span>
+                    {groupUnread > 0 && (
+                      <span className="text-xs font-bold bg-orange-500 text-white rounded-full px-1.5 py-0.5 tabular-nums leading-none">
+                        {groupUnread}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+                      {group.articles.length}
+                    </span>
+                    {isCollapsed ? <ChevronDown size={14} className="text-gray-400 flex-shrink-0" /> : <ChevronUp size={14} className="text-gray-400 flex-shrink-0" />}
+                  </button>
+                  {!isCollapsed && (
+                    <div>
+                      {group.articles.map(article => (
+                        <ArticleItem
+                          key={article.guid}
+                          article={article}
+                          isRead={readGuids.has(article.guid)}
+                          contentLines={contentLines}
+                          onRead={handleMarkAsRead}
+                          onUnread={handleMarkAsUnread}
+                          isLowVelocity={isLowVelocityFeed(article.feedUrl)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div ref={listRef}>
