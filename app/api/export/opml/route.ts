@@ -10,8 +10,19 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
-export async function GET() {
-  const feeds = await getFeeds();
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const viewFilter = searchParams.get('view');
+  const categoryFilter = searchParams.getAll('category');
+
+  let feeds = await getFeeds();
+
+  if (viewFilter) {
+    feeds = feeds.filter((f) => (f.view || 'Default') === viewFilter);
+  }
+  if (categoryFilter.length > 0) {
+    feeds = feeds.filter((f) => categoryFilter.includes(f.category));
+  }
 
   // Group feeds by category
   const byCategory = new Map<string, Feed[]>();

@@ -443,6 +443,14 @@ export default function RiverView() {
     return counts;
   }, [articles, selectedView]);
 
+  const opmlHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedView !== 'All') params.set('view', selectedView);
+    selectedCategories.forEach((cat) => params.append('category', cat));
+    const qs = params.toString();
+    return `/api/export/opml${qs ? `?${qs}` : ''}`;
+  }, [selectedView, selectedCategories]);
+
   const isLowVelocityFeed = useCallback((feedUrl: string): boolean => {
     return (feedVelocities.get(feedUrl) || 0) <= FEED_VELOCITY_THRESHOLDS[timeRange];
   }, [feedVelocities, timeRange]);
@@ -665,7 +673,7 @@ export default function RiverView() {
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
               </button>
               <a
-                href="/api/export/opml"
+                href={opmlHref}
                 download="rss-flow-subscriptions.opml"
                 className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                 title="Export OPML"
@@ -960,7 +968,7 @@ export default function RiverView() {
                 {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
               </button>
               <a
-                href="/api/export/opml"
+                href={opmlHref}
                 download="rss-flow-subscriptions.opml"
                 onClick={() => setIsMenuOpen(false)}
                 className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
