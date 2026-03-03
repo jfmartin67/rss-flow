@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { FileText } from 'lucide-react';
 import { Article, ContentLines } from '@/types';
 import { formatRelativeTime, truncateContent, getFaviconUrl } from '@/lib/utils';
@@ -20,6 +20,10 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fullContent, setFullContent] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  // Track whether onRead should fire when the modal closes, to avoid
+  // calling it at open-time (which would remove the item from the list
+  // when hideReadArticles is on, unmounting this component mid-render).
+  const pendingOnRead = useRef(false);
 
   const handleClick = async () => {
     // Open article in new tab
@@ -35,11 +39,13 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
   };
 
   const handleOpenModal = async () => {
+    // Capture read state before opening; defer local state update to onClose
+    // so the article isn't removed from the filtered list while the modal is open.
+    pendingOnRead.current = !isRead;
     setIsModalOpen(true);
 
-    // Mark as read and count toward stats
+    // Persist to server immediately, but don't update local state yet
     if (!isRead) {
-      onRead(article.guid);
       markAsRead(article.guid);
     }
     markAsOpened(article.guid);
@@ -164,7 +170,13 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
       <ArticleModal
         article={article}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          if (pendingOnRead.current) {
+            pendingOnRead.current = false;
+            onRead(article.guid);
+          }
+        }}
         content={fullContent}
         isLoading={isLoadingContent}
       />
