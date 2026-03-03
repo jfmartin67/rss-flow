@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime, truncateContent, getFaviconUrl } from '@/lib/utils';
-import { markAsRead, markAsUnread, fetchArticleContent } from '@/app/actions/articles';
+import { markAsRead, markAsUnread, markAsOpened, fetchArticleContent } from '@/app/actions/articles';
 import ArticleModal from './ArticleModal';
 
 interface FrontpageItemProps {
@@ -40,6 +40,7 @@ export default function FrontpageItem({ article, isRead, onRead, onUnread }: Fro
       onRead(article.guid);
       markAsRead(article.guid);
     }
+    markAsOpened(article.guid);
     if (fullContent === null && !isLoadingContent) {
       setIsLoadingContent(true);
       const result = await fetchArticleContent(article.feedUrl, article.guid);

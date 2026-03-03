@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Article, ContentLines } from '@/types';
 import { formatRelativeTime, truncateContent, getFaviconUrl } from '@/lib/utils';
-import { markAsRead, markAsUnread, fetchArticleContent } from '@/app/actions/articles';
+import { markAsRead, markAsUnread, markAsOpened, fetchArticleContent } from '@/app/actions/articles';
 import ArticleModal from './ArticleModal';
 
 interface ArticleItemProps {
@@ -37,11 +37,12 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
   const handleOpenModal = async () => {
     setIsModalOpen(true);
 
-    // Mark as read
+    // Mark as read and count toward stats
     if (!isRead) {
       onRead(article.guid);
       markAsRead(article.guid);
     }
+    markAsOpened(article.guid);
 
     // Fetch content if not already loaded
     if (fullContent === null && !isLoadingContent) {
@@ -63,7 +64,7 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
         isLowVelocity ? 'border-l-4 border-l-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : ''
       }`}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -75,12 +76,12 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
               markAsRead(article.guid);
             }
           }}
-          className="p-2 -m-2 flex-shrink-0 transition-opacity hover:opacity-60"
+          className="group/dot p-2 -m-2 flex-shrink-0 transition-opacity hover:opacity-60"
           title={isRead ? 'Mark as unread' : 'Mark as read'}
           aria-label={isRead ? 'Mark as unread' : 'Mark as read'}
         >
           <span
-            className={`w-3.5 h-3.5 rounded-full block flex-shrink-0 ${
+            className={`w-3.5 h-3.5 rounded-full block flex-shrink-0 transition-transform group-hover/dot:scale-125 ${
               isRead ? 'border-2 border-gray-300 dark:border-gray-600' : ''
             }`}
             style={isRead ? undefined : { backgroundColor: article.categoryColor }}

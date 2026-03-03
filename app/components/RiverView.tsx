@@ -9,7 +9,7 @@ import FrontpageItem from './FrontpageItem';
 import ArticleModal from './ArticleModal';
 import StatsPanel from './StatsPanel';
 import DigestPanel from './DigestPanel';
-import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead } from '@/app/actions/articles';
+import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead, markAsOpened } from '@/app/actions/articles';
 import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2, Layers, List } from 'lucide-react';
 import { getFaviconUrl } from '@/lib/utils';
 import { useTheme } from './ThemeProvider';
@@ -331,6 +331,7 @@ export default function RiverView() {
     setIsDigestArticleLoading(true);
     handleMarkAsRead(article.guid);
     markAsRead(article.guid);
+    markAsOpened(article.guid);
     const result = await fetchArticleContent(article.feedUrl, article.guid);
     setDigestOpenedContent(result.success && result.content ? result.content : 'Failed to load article content.');
     setIsDigestArticleLoading(false);

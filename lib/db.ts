@@ -6,6 +6,7 @@ const KV_PREFIX = process.env.KV_PREFIX || 'rss-flow';
 
 const FEEDS_KEY = `${KV_PREFIX}:feeds:list`;
 const READ_ARTICLES_KEY = `${KV_PREFIX}:articles:read`;
+const OPENED_ARTICLES_KEY = `${KV_PREFIX}:articles:opened`;
 
 // Create Redis client using KV_URL (direct Redis connection)
 // Connection string format: redis://user:password@host:port
@@ -103,6 +104,25 @@ export async function getReadArticles(): Promise<Set<string>> {
     return new Set(readGuids || []);
   } catch (error) {
     console.error('Error getting read articles:', error);
+    return new Set();
+  }
+}
+
+export async function markArticleAsOpened(guid: string): Promise<void> {
+  try {
+    await redis.sadd(OPENED_ARTICLES_KEY, guid);
+  } catch (error) {
+    console.error('Error marking article as opened:', error);
+    throw new Error('Failed to mark article as opened');
+  }
+}
+
+export async function getOpenedArticles(): Promise<Set<string>> {
+  try {
+    const guids = await redis.smembers(OPENED_ARTICLES_KEY);
+    return new Set(guids || []);
+  } catch (error) {
+    console.error('Error getting opened articles:', error);
     return new Set();
   }
 }

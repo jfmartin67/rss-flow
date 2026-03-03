@@ -1,7 +1,7 @@
 'use server';
 
 import { Article, TimeRange } from '@/types';
-import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead, unmarkArticleAsRead as dbUnmarkAsRead, markMultipleArticlesAsRead as dbMarkMultipleAsRead } from '@/lib/db';
+import { getFeeds, getReadArticles, markArticleAsRead as dbMarkAsRead, unmarkArticleAsRead as dbUnmarkAsRead, markMultipleArticlesAsRead as dbMarkMultipleAsRead, markArticleAsOpened as dbMarkAsOpened, getOpenedArticles } from '@/lib/db';
 import { fetchAllFeeds, fetchArticleContent as rssFetchArticleContent } from '@/lib/rss';
 import { filterByTimeRange, interleaveArticles } from '@/lib/utils';
 import { FEED_MAX_CONSECUTIVE, STATS_WINDOW_DAYS } from '@/lib/config';
@@ -35,6 +35,16 @@ export async function markAsRead(guid: string): Promise<{ success: boolean }> {
     return { success: true };
   } catch (error) {
     console.error('Error marking article as read:', error);
+    return { success: false };
+  }
+}
+
+export async function markAsOpened(guid: string): Promise<{ success: boolean }> {
+  try {
+    await dbMarkAsOpened(guid);
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking article as opened:', error);
     return { success: false };
   }
 }
@@ -108,13 +118,13 @@ function computeStats(feedUrl: string, feedArticles: Article[], readSet: Set<str
 // panel loads stats for multiple feeds.
 export async function getAllFeedStatistics(): Promise<Record<string, FeedStats>> {
   try {
-    const [fetchResult, readGuids] = await Promise.all([
+    const [fetchResult, openedSet] = await Promise.all([
       fetchAllArticles('7d'),
-      getReadArticlesList(),
+      getOpenedArticles(),
     ]);
     const allArticles = fetchResult.articles;
 
-    const readSet = new Set(readGuids);
+    const readSet = openedSet;
 
     // Group articles by feed URL in one pass
     const byFeed = new Map<string, Article[]>();
@@ -140,12 +150,12 @@ export async function getAllFeedStatistics(): Promise<Record<string, FeedStats>>
 
 export async function getFeedStatistics(feedUrl: string): Promise<FeedStats> {
   try {
-    const [result, readGuids] = await Promise.all([
+    const [result, openedSet] = await Promise.all([
       fetchAllArticles('7d'),
-      getReadArticlesList(),
+      getOpenedArticles(),
     ]);
     const feedArticles = result.articles.filter(article => article.feedUrl === feedUrl);
-    return computeStats(feedUrl, feedArticles, new Set(readGuids));
+    return computeStats(feedUrl, feedArticles, openedSet);
   } catch (error) {
     console.error('Error fetching feed statistics:', error);
     return { feedUrl, totalArticles: 0, readArticles: 0, readRate: 0, lastArticleDate: null, articlesPerDay: 0 };
