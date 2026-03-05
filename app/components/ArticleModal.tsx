@@ -30,6 +30,10 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const [quotes, setQuotes] = useState<string[] | null>(null);
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [quotesError, setQuotesError] = useState(false);
+  const [summaryRequested, setSummaryRequested] = useState(false);
+  const [quotesRequested, setQuotesRequested] = useState(false);
+
+  const isShortArticle = !!content && content.replace(/<[^>]+>/g, '').length < 500;
 
   // Handle escape key
   useEffect(() => {
@@ -55,7 +59,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   // on every loading-state change, producing an infinite retry loop on error.
   // try/finally guarantees the spinner is always cleared even if the server action throws.
   useEffect(() => {
-    if (!isOpen || !content || summary !== null) {
+    if (!isOpen || !content || summary !== null || (isShortArticle && !summaryRequested)) {
       return;
     }
 
@@ -77,12 +81,12 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     };
 
     fetchSummary();
-  }, [isOpen, content, article.guid, summary]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, content, article.guid, summary, isShortArticle, summaryRequested]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch key quotes when content is available.
   // Same rationale as above: quotesLoading omitted from deps to prevent retry loops.
   useEffect(() => {
-    if (!isOpen || !content || quotes !== null) {
+    if (!isOpen || !content || quotes !== null || (isShortArticle && !quotesRequested)) {
       return;
     }
 
@@ -104,7 +108,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     };
 
     fetchQuotes();
-  }, [isOpen, content, article.guid, quotes]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, content, article.guid, quotes, isShortArticle, quotesRequested]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset summary and quotes when modal closes
   useEffect(() => {
@@ -115,6 +119,8 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
       setQuotes(null);
       setQuotesError(false);
       setQuotesLoading(false);
+      setSummaryRequested(false);
+      setQuotesRequested(false);
     }
   }, [isOpen]);
 
@@ -574,6 +580,30 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
             </div>
           ) : content ? (
             <>
+              {/* On-demand AI buttons for short articles */}
+              {isShortArticle && (!summaryRequested || !quotesRequested) && !summaryLoading && !quotesLoading && (
+                <div className="mb-6 flex gap-3 flex-wrap">
+                  {!summaryRequested && (
+                    <button
+                      onClick={() => setSummaryRequested(true)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+                    >
+                      <Sparkles size={14} />
+                      Generate summary
+                    </button>
+                  )}
+                  {!quotesRequested && (
+                    <button
+                      onClick={() => setQuotesRequested(true)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                    >
+                      <Quote size={14} />
+                      Extract quotes
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* AI Summary */}
               {(summaryLoading || summary || summaryError) && (
                 <div
