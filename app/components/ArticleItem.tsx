@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { FileText } from 'lucide-react';
 import { Article, ContentLines } from '@/types';
 import { formatRelativeTime, truncateContent, getFaviconUrl } from '@/lib/utils';
-import { markAsRead, markAsUnread, markAsOpened, fetchArticleContent } from '@/app/actions/articles';
+import { markAsRead, markAsOpened, fetchArticleContent } from '@/app/actions/articles';
 import ArticleModal from './ArticleModal';
 
 interface ArticleItemProps {
@@ -76,10 +76,8 @@ export default function ArticleItem({ article, isRead, contentLines, onRead, onU
             e.stopPropagation();
             if (isRead) {
               onUnread(article.guid);
-              markAsUnread(article.guid);
             } else {
               onRead(article.guid);
-              markAsRead(article.guid);
             }
           }}
           className="group/dot p-2 -m-2 flex-shrink-0 transition-opacity hover:opacity-60"
