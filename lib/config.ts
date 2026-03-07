@@ -22,7 +22,7 @@ export const EXTRACT_MIN_CONTENT_LENGTH = 200;     // minimum extracted length t
 // AI
 export const AI_MODEL = 'claude-haiku-4-5-20251001';
 export const AI_MAX_INPUT_CHARS = 15000;           // max chars sent to Claude (~3000 words)
-export const AI_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 days
+export const AI_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 export const AI_MAX_QUOTES = 3;
 export const AI_MAX_QUOTE_LENGTH = 500;
 export const AI_TIMEOUT_MS = 30000;                // 30 s before aborting an AI request
