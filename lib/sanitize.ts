@@ -14,16 +14,14 @@ export function sanitizeArticleHtml(dirty: string): string {
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'ul', 'ol', 'li', 'dl', 'dt', 'dd',
       'blockquote', 'pre', 'code', 'hr', 'br',
-      'figure', 'figcaption',
       'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
       // Inline
       'a', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'ins',
       'abbr', 'acronym', 'cite', 'q', 'time', 'mark', 'small', 'sub', 'sup',
-      'span', 'img',
+      'span',
     ],
     allowedAttributes: {
       'a': ['href', 'title', 'rel', 'target'],
-      'img': ['src', 'alt', 'title', 'width', 'height', 'loading'],
       'td': ['colspan', 'rowspan'],
       'th': ['colspan', 'rowspan', 'scope'],
       'abbr': ['title'],
@@ -32,9 +30,6 @@ export function sanitizeArticleHtml(dirty: string): string {
       '*': ['class'],  // allow class on everything (for prose styles)
     },
     allowedSchemes: ['http', 'https', 'mailto'],
-    allowedSchemesByTag: {
-      img: ['http', 'https'],  // no data: URIs for images
-    },
     transformTags: {
       // Force external links to open safely
       'a': (tagName, attribs) => ({
