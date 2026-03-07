@@ -1,12 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { Red_Hat_Display } from "next/font/google";
+import { Red_Hat_Display, IBM_Plex_Sans } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const redHatDisplay = Red_Hat_Display({
   subsets: ["latin"],
   variable: "--font-red-hat-display",
+});
+
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ibm-plex",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={redHatDisplay.variable}>
+    <html lang="en" className={`${redHatDisplay.variable} ${ibmPlexSans.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
@@ -61,6 +67,9 @@ export default function RootLayout({
                     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
                   if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
+                  }
+                  if (localStorage.getItem('rss-flow:font') === 'ibm-plex') {
+                    document.documentElement.classList.add('font-ibm-plex');
                   }
                 } catch (e) {}
               })();

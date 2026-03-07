@@ -15,8 +15,12 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-red-hat-display), sans-serif;
   overscroll-behavior-y: contain;
+}
+
+.font-ibm-plex body {
+  font-family: var(--font-ibm-plex), sans-serif;
 }
 
 @layer utilities {
