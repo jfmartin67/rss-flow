@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo } from 'react';
 import { Feed } from '@/types';
 import { addFeed, updateFeed, deleteFeed, getAllFeeds, renameView } from '@/app/actions/feeds';
 import { getAllFeedStatistics, type FeedStats } from '@/app/actions/articles';
-import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2 } from 'lucide-react';
+import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2, Bell } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
 interface FeedManagerProps {
@@ -201,6 +201,18 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
         setFeeds(feeds.filter(feed => feed.id !== id));
       } else {
         setError(result.error || 'Failed to delete feed');
+      }
+    });
+  };
+
+  const handleToggleWatch = async (feed: Feed) => {
+    const newWatched = !feed.watched;
+    setFeeds(prev => prev.map(f => f.id === feed.id ? { ...f, watched: newWatched } : f));
+    startTransition(async () => {
+      const result = await updateFeed(feed.id, { watched: newWatched });
+      if (!result.success) {
+        setFeeds(prev => prev.map(f => f.id === feed.id ? { ...f, watched: feed.watched } : f));
+        setError(result.error || 'Failed to update feed');
       }
     });
   };
@@ -599,6 +611,18 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
                         </>
                       ) : (
                         <>
+                          <button
+                            onClick={() => handleToggleWatch(feed)}
+                            disabled={isPending}
+                            className={`p-2 rounded transition-colors ${
+                              feed.watched
+                                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
+                            }`}
+                            title={feed.watched ? 'Unwatch feed' : 'Watch feed'}
+                          >
+                            <Bell size={16} />
+                          </button>
                           <button
                             onClick={() => toggleStats(feed.id, feed.url)}
                             className="p-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"

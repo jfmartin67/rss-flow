@@ -5,6 +5,7 @@ export interface Feed {
   color: string;
   name: string;
   view: string;
+  watched?: boolean;
 }
 
 export interface Article {

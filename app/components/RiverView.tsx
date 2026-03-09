@@ -10,7 +10,8 @@ import ArticleModal from './ArticleModal';
 import StatsPanel from './StatsPanel';
 import DigestPanel from './DigestPanel';
 import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead, markAsOpened } from '@/app/actions/articles';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2, Layers, List, Type } from 'lucide-react';
+import { getWatchedFeedUrls } from '@/app/actions/feeds';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2, Layers, List, Type, Bell, X } from 'lucide-react';
 import { getFaviconUrl } from '@/lib/utils';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
@@ -50,6 +51,8 @@ export default function RiverView() {
   const [digestOpenedArticle, setDigestOpenedArticle] = useState<Article | null>(null);
   const [digestOpenedContent, setDigestOpenedContent] = useState<string | null>(null);
   const [isDigestArticleLoading, setIsDigestArticleLoading] = useState(false);
+  const [watchedFeedUrls, setWatchedFeedUrls] = useState<string[]>([]);
+  const [dismissedWatchedGuids, setDismissedWatchedGuids] = useState<Set<string>>(new Set());
   const { theme, toggleTheme, font, toggleFont } = useTheme();
   const listRef = useRef<HTMLDivElement>(null);
   const currentArticleGuidsRef = useRef<Set<string>>(new Set());
@@ -142,10 +145,11 @@ export default function RiverView() {
     const savedMode = localStorage.getItem('rss-flow:displayMode');
     if (savedMode === 'frontpage' || savedMode === 'source') setDisplayMode(savedMode);
 
-    Promise.all([fetchAllArticles('24h'), getReadArticlesList()]).then(([result, guids]) => {
+    Promise.all([fetchAllArticles('24h'), getReadArticlesList(), getWatchedFeedUrls()]).then(([result, guids, watchedUrls]) => {
       setArticles(result.articles);
       setFetchError(result.error ?? null);
       setReadGuids(new Set(guids));
+      setWatchedFeedUrls(watchedUrls);
       setIsInitialLoading(false);
     });
   }, []);
@@ -496,6 +500,35 @@ export default function RiverView() {
     [filteredArticles, readGuids]
   );
   const unreadCount = unreadArticles.length;
+
+  // Watched feed alerts: unread articles from watched feeds not yet dismissed
+  const watchedAlerts = useMemo(() => {
+    if (watchedFeedUrls.length === 0) return [];
+    return articles.filter(a =>
+      !readGuids.has(a.guid) &&
+      watchedFeedUrls.includes(a.feedUrl) &&
+      !dismissedWatchedGuids.has(a.guid)
+    );
+  }, [articles, readGuids, watchedFeedUrls, dismissedWatchedGuids]);
+
+  // Group watched alerts by feed for display
+  const watchedAlertsByFeed = useMemo(() => {
+    const groups = new Map<string, { feedName: string; count: number }>();
+    for (const a of watchedAlerts) {
+      const existing = groups.get(a.feedUrl);
+      if (existing) existing.count++;
+      else groups.set(a.feedUrl, { feedName: a.feedName, count: 1 });
+    }
+    return Array.from(groups.values());
+  }, [watchedAlerts]);
+
+  const dismissWatchedAlerts = () => {
+    setDismissedWatchedGuids(prev => {
+      const next = new Set(prev);
+      watchedAlerts.forEach(a => next.add(a.guid));
+      return next;
+    });
+  };
 
   // Mark all visible articles as read
   const handleMarkAllAsRead = async () => {
@@ -1107,6 +1140,27 @@ export default function RiverView() {
       )}
 
       <main className="w-full">
+        {/* Watched feeds alert banner */}
+        {watchedAlerts.length > 0 && (
+          <div className="w-full flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700">
+            <Bell size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <span className="text-sm font-medium text-amber-800 dark:text-amber-200 flex-1 min-w-0">
+              {watchedAlertsByFeed.length === 1
+                ? `${watchedAlertsByFeed[0].count} new article${watchedAlertsByFeed[0].count !== 1 ? 's' : ''} from ${watchedAlertsByFeed[0].feedName}`
+                : `${watchedAlerts.length} new article${watchedAlerts.length !== 1 ? 's' : ''} from ${watchedAlertsByFeed.map(g => g.feedName).join(', ')}`
+              }
+            </span>
+            <button
+              onClick={dismissWatchedAlerts}
+              className="p-1 rounded text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors flex-shrink-0"
+              title="Dismiss"
+              aria-label="Dismiss watched feed alerts"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         {articles.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">

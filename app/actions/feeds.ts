@@ -39,7 +39,7 @@ export async function addFeed(url: string, category: string, color: string, view
   }
 }
 
-export async function updateFeed(id: string, updates: { name?: string; category?: string; color?: string; view?: string }): Promise<{ success: boolean; error?: string }> {
+export async function updateFeed(id: string, updates: { name?: string; category?: string; color?: string; view?: string; watched?: boolean }): Promise<{ success: boolean; error?: string }> {
   try {
     await dbUpdateFeed(id, updates);
     revalidatePath('/');
@@ -87,6 +87,11 @@ export async function renameView(oldName: string, newName: string): Promise<{ su
     console.error('Error renaming view:', error);
     return { success: false, error: 'Failed to rename view' };
   }
+}
+
+export async function getWatchedFeedUrls(): Promise<string[]> {
+  const feeds = await getFeeds();
+  return feeds.filter(f => f.watched).map(f => f.url);
 }
 
 export async function getAllFeeds(): Promise<Feed[]> {
