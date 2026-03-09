@@ -32,6 +32,7 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
   const [quotesError, setQuotesError] = useState(false);
   const [summaryRequested, setSummaryRequested] = useState(false);
   const [quotesRequested, setQuotesRequested] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const isShortArticle = !!content && content.replace(/<[^>]+>/g, '').length < 500;
 
@@ -551,6 +552,24 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
             </h2>
           </div>
           <div className="flex gap-2 flex-shrink-0">
+            {article.link && (
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(article.link);
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  } catch {
+                    // fallback: do nothing
+                  }
+                }}
+                className={`p-2 transition-colors ${linkCopied ? 'text-green-500' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                title={linkCopied ? 'Copied!' : 'Copy link'}
+                aria-label="Copy link"
+              >
+                <Copy size={20} />
+              </button>
+            )}
             {article.link && (
               <a
                 href={article.link}
