@@ -583,6 +583,22 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
               </button>
             )}
             {article.link && (
+              <button
+                onClick={() => {
+                  const url = `https://bookmarks.numericcitizen.me/save?${new URLSearchParams({
+                    url: article.link,
+                    title: article.title?.trim() || 'Untitled',
+                  }).toString()}`;
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }}
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                title="Save to bookmarks"
+                aria-label="Save to bookmarks"
+              >
+                <Bookmark size={20} />
+              </button>
+            )}
+            {article.link && (
               <a
                 href={article.link}
                 target="_blank"
