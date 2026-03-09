@@ -749,20 +749,6 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
           </div>
         )}
 
-        {/* Footer */}
-        {article.link && (
-          <div className="p-4 md:p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <a
-              href={article.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
-            >
-              <ExternalLink size={18} />
-              Read Full Article
-            </a>
-          </div>
-        )}
       </div>
     </>,
     document.body
