@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ExternalLink, Loader2, Copy, Send, Sparkles, Quote } from 'lucide-react';
+import { X, ExternalLink, Loader2, Copy, Send, Sparkles, Quote, Bookmark } from 'lucide-react';
 import { Article } from '@/types';
 import { formatRelativeTime, getFaviconUrl } from '@/lib/utils';
 import { generateSummary, extractKeyQuotes } from '@/app/actions/ai';
@@ -473,6 +473,18 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleSaveQuoteToBookmarks = (quote: string) => {
+    if (!quote) return;
+    const url = `https://bookmarks.numericcitizen.me/save?${new URLSearchParams({
+      type: 'quote',
+      text: quote,
+      author: article.feedName,
+      url: article.link,
+      title: article.title?.trim() || 'Untitled',
+    }).toString()}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const handleSendQuoteToMicroblog = (quote: string) => {
     if (!quote) return;
 
@@ -685,20 +697,33 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
                           key={index}
                           className="group relative p-3 pl-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                         >
-                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic pr-8">
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic pr-16">
                             "{quote}"
                           </p>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSendQuoteToMicroblog(quote);
-                            }}
-                            className="absolute top-3 right-3 p-1.5 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors opacity-0 group-hover:opacity-100"
-                            title="Send quote to microblog"
-                            aria-label="Send quote to microblog"
-                          >
-                            <Send className="w-4 h-4" />
-                          </button>
+                          <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveQuoteToBookmarks(quote);
+                              }}
+                              className="p-1.5 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors"
+                              title="Save quote to bookmarks"
+                              aria-label="Save quote to bookmarks"
+                            >
+                              <Bookmark className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSendQuoteToMicroblog(quote);
+                              }}
+                              className="p-1.5 text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors"
+                              title="Send quote to microblog"
+                              aria-label="Send quote to microblog"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
