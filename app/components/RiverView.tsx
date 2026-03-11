@@ -11,7 +11,7 @@ import StatsPanel from './StatsPanel';
 import DigestPanel from './DigestPanel';
 import { fetchAllArticles, markAllAsRead, getReadArticlesList, fetchArticleContent, markAsRead, markAsOpened } from '@/app/actions/articles';
 import { getWatchedFeedUrls } from '@/app/actions/feeds';
-import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2, Layers, List, Type, Bell, X } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, Menu, Filter, ChevronDown, ChevronUp, CheckCheck, EyeOff, Eye, Download, Newspaper, BarChart2, Layers, List, Bell, X } from 'lucide-react';
 import { getFaviconUrl } from '@/lib/utils';
 import { useTheme } from './ThemeProvider';
 import HamburgerMenu from './HamburgerMenu';
@@ -53,7 +53,7 @@ export default function RiverView() {
   const [isDigestArticleLoading, setIsDigestArticleLoading] = useState(false);
   const [watchedFeedUrls, setWatchedFeedUrls] = useState<string[]>([]);
   const [dismissedWatchedGuids, setDismissedWatchedGuids] = useState<Set<string>>(new Set());
-  const { theme, toggleTheme, font, toggleFont } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const listRef = useRef<HTMLDivElement>(null);
   const currentArticleGuidsRef = useRef<Set<string>>(new Set());
 
@@ -731,14 +731,6 @@ export default function RiverView() {
               >
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
               </button>
-              <button
-                onClick={toggleFont}
-                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
-                title={font === 'red-hat' ? 'Switch to IBM Plex Sans' : 'Switch to Red Hat Display'}
-              >
-                <Type size={18} />
-                <span className="text-xs font-medium">{font === 'red-hat' ? 'RH' : 'IBM'}</span>
-              </button>
               <a
                 href={opmlHref}
                 download="rss-flow-subscriptions.opml"
@@ -1033,13 +1025,6 @@ export default function RiverView() {
               >
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                 {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-              </button>
-              <button
-                onClick={() => { toggleFont(); setIsMenuOpen(false); }}
-                className="px-4 py-3 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <Type size={18} />
-                {font === 'red-hat' ? 'IBM Plex Sans' : 'Red Hat Display'}
               </button>
               <a
                 href={opmlHref}

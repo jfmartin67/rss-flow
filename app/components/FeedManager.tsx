@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo } from 'react';
 import { Feed } from '@/types';
 import { addFeed, updateFeed, deleteFeed, getAllFeeds, renameView } from '@/app/actions/feeds';
 import { getAllFeedStatistics, type FeedStats } from '@/app/actions/articles';
-import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2, Bell } from 'lucide-react';
+import { Home, Plus, Trash2, Sun, Moon, Edit2, Check, X, ChevronDown, TrendingUp, Eye, Calendar, Activity, Loader2, Bell, Type } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
 interface FeedManagerProps {
@@ -71,7 +71,7 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
   const [view, setView] = useState('');
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, font, toggleFont } = useTheme();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('');
@@ -283,6 +283,14 @@ export default function FeedManager({ initialFeeds }: FeedManagerProps) {
             Feed Management
           </h1>
           <div className="flex gap-2">
+            <button
+              onClick={toggleFont}
+              className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+              title={font === 'red-hat' ? 'Switch to IBM Plex Sans' : 'Switch to Red Hat Display'}
+            >
+              <Type size={18} />
+              <span className="text-xs font-medium">{font === 'red-hat' ? 'RH' : 'IBM'}</span>
+            </button>
             <button
               onClick={toggleTheme}
               className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
