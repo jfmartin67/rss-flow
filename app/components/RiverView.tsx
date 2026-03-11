@@ -578,6 +578,9 @@ export default function RiverView() {
                     {unreadCount}
                   </button>
                 )}
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Last updated: {formatRefreshTime(lastRefreshTime)}
+                </span>
               </div>
             </div>
 
@@ -672,9 +675,6 @@ export default function RiverView() {
               >
                 <BarChart2 size={18} />
               </button>
-              <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
-                {formatRefreshTime(lastRefreshTime)}
-              </span>
               <button
                 onClick={() => setHideReadArticles(!hideReadArticles)}
                 className={`p-2 rounded transition-colors ${
