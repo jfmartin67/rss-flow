@@ -427,16 +427,41 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
     }
   };
 
+  // Normalize a URL so it doesn't contain bare % signs that break downstream decodeURIComponent
+  const safeArticleLink = () => {
+    try {
+      return new URL(article.link).href;
+    } catch {
+      // Escape any % not followed by two hex digits
+      return article.link.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
+    }
+  };
+
+  // encodeURIComponent that strips lone surrogates (which would throw URIError)
+  const safeEncode = (str: string) => {
+    try {
+      return encodeURIComponent(str);
+    } catch {
+      return encodeURIComponent(str.replace(/[\uD800-\uDFFF]/g, '\uFFFD'));
+    }
+  };
+
+  // Escape bare % in plaintext so a downstream double-decodeURIComponent doesn't throw.
+  // microblog-poster decodes the param twice: once by Next.js (framework), once explicitly
+  // in app code. After the first decode, any % in the text is a literal percent sign —
+  // if followed by non-hex chars it blows up the second decode.
+  const safeText = (s: string) => s.replace(/%/g, '%25');
+
   const handleSendToMicroblog = () => {
     if (!selectedText) return;
 
     // Format as markdown with citation at the beginning
     const lines = selectedText.split('\n');
-    const quotedLines = lines.map(line => `> ${line}`).join('\n');
-    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}`;
+    const quotedLines = lines.map(line => `> ${safeText(line)}`).join('\n');
+    const markdown = `[${safeText(article.title?.trim() || 'Untitled')}](${safeArticleLink()}) — ${safeText(article.feedName)}\n\n${quotedLines}`;
 
     // URL encode the markdown and open in new tab
-    const encodedMarkdown = encodeURIComponent(markdown);
+    const encodedMarkdown = safeEncode(markdown);
     const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
 
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -463,11 +488,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     // Format summary as markdown with citation, then blank lines for the user's own comment
     const lines = summary.split('\n');
-    const quotedLines = lines.map(line => `> ${line}`).join('\n');
-    const markdown = `${article.feedName}'s article \u201C[${article.title?.trim() || 'Untitled'}](${article.link})\u201D:\n\n${quotedLines}\n\n`;
+    const quotedLines = lines.map(line => `> ${safeText(line)}`).join('\n');
+    const markdown = `${safeText(article.feedName)}'s article \u201C[${safeText(article.title?.trim() || 'Untitled')}](${safeArticleLink()})\u201D:\n\n${quotedLines}\n\n`;
 
     // URL encode the markdown and open in new tab
-    const encodedMarkdown = encodeURIComponent(markdown);
+    const encodedMarkdown = safeEncode(markdown);
     const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
 
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -490,11 +515,11 @@ export default function ArticleModal({ article, isOpen, onClose, content, isLoad
 
     // Format quote as markdown with citation at the beginning
     const lines = quote.split('\n');
-    const quotedLines = lines.map(line => `> ${line}`).join('\n');
-    const markdown = `[${article.title?.trim() || 'Untitled'}](${article.link}) — ${article.feedName}\n\n${quotedLines}`;
+    const quotedLines = lines.map(line => `> ${safeText(line)}`).join('\n');
+    const markdown = `[${safeText(article.title?.trim() || 'Untitled')}](${safeArticleLink()}) — ${safeText(article.feedName)}\n\n${quotedLines}`;
 
     // URL encode the markdown and open in new tab
-    const encodedMarkdown = encodeURIComponent(markdown);
+    const encodedMarkdown = safeEncode(markdown);
     const url = `https://microblog-poster.numericcitizen.me/?linkpost=${encodedMarkdown}`;
 
     window.open(url, '_blank', 'noopener,noreferrer');
